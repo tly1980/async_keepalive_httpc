@@ -1,0 +1,4 @@
+dump.txt
+.python-version
+tests/logs
+*.pid

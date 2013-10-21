@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>RFC 2279 - UTF-8, a transformation format of ISO 10646</title>
+<meta name="description" content="RFC 2279">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="css/main.css" rel="stylesheet" media="screen">
+</head>
+<body>
+
+ <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="brand" href="#">RFC Base</a>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+              <li><a href="/">Home</a></li>
+              <li><a href="/about.php">About</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+
+<div class="container">
+<h1>UTF-8, a transformation format of ISO 10646</h1>
+This RFC was published in <a href="/rfc-year-1998.html">1998</a>.
+<h3>Abstract</h3>
+<p/>
+ISO/IEC 10646-1 defines a multi-octet character set called the Universal Character Set (UCS) which encompasses most of the world's writing systems.<br/>Multi-octet characters, however, are not compatible with many current applications and protocols, and this has led to the development of a few so-called UCS transformation formats (UTF), each with different characteristics.<br/> UTF-8, the object of this memo, has the characteristic of preserving the full US-ASCII range, providing compatibility with file systems, parsers and other software that rely on US-ASCII values but are transparent to other values.<br/>This memo updates and replaces RFC 2044, in particular addressing the question of versions of the relevant standards.<br/>
+<h3>RFC 2279 introduction</h3>
+<p/>
+ISO/IEC 10646-1 [ISO-10646] defines a multi-octet character set called the Universal Character Set (UCS), which encompasses most of the world's writing systems.<br/> Two multi-octet encodings are defined, a four-octet per character encoding called UCS-4 and a two-octet per character encoding called UCS-2, able to address only the first 64K characters of the UCS (the Basic Multilingual Plane, BMP), outside of which there are currently no assignments.<br/>
+
+<h3>Download links</h3>
+<p/>Click here to download RFC 2279: <a class="btn btn-info" href="/txt/rfc-2279.txt">TXT format</a> <span class="btn btn-info">PDF format (coming soon)</span> 
+
+<h3>Related RFCs</h3>
+<p/>
+<ul>
+<li><a href="/rfc-2278.html">RFC 2278 - IANA Charset Registration Procedures</a></li>
+<li><a href="/rfc-2152.html">RFC 2152 - Utf-7</a></li>
+<li><a href="/rfc-2049.html">RFC 2049</a></li>
+<li><a href="/rfc-2048.html">RFC 2048</a></li>
+<li><a href="/rfc-2046.html">RFC 2046</a></li>
+<li><a href="/rfc-2045.html">RFC 2045</a></li>
+<li><a href="/rfc-2044.html">RFC 2044 - UTF-8, a transformation format of Unicode and ISO 10646</a></li>
+<li><a href="/rfc-1998.html">RFC 1998 - An Application of the BGP Community Attribute in Multi-home Routing</a></li>
+<li><a href="/rfc-1642.html">RFC 1642 - Utf-7</a></li>
+</ul>
+
+
+<h3>Comments</h3>
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+/* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+var disqus_shortname = 'rfcbase'; // required: replace example with your forum shortname
+
+/* * * DON'T EDIT BELOW THIS LINE * * */
+(function() {
+ var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+ dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+ (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+ })();
+</script>
+<noscript>Please enable JavaScript to view the comments powered by Disqus.</a></noscript>
+
+
+</div>
+</body>
+</html>
