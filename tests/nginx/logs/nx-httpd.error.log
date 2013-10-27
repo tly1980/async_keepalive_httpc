@@ -1,0 +1,39 @@
+2013/10/18 12:01:48 [error] 23134#0: *1 open() "/Users/minddriven/workspace/play_tor/resource/css/main.css" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /css/main.css HTTP/1.1", host: "localhost:9000", referrer: "http://localhost:9000/rfc-2279.html"
+2013/10/18 17:10:11 [error] 25919#0: *3 open() "/Users/minddriven/workspace/play_tor/resource/favicon.ico" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /favicon.ico HTTP/1.1", host: "localhost:9000"
+2013/10/18 17:10:35 [error] 25919#0: *3 open() "/Users/minddriven/workspace/play_tor/resource/favicon.ico" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /favicon.ico HTTP/1.1", host: "localhost:9000"
+2013/10/18 17:10:42 [error] 25919#0: *3 open() "/Users/minddriven/workspace/play_tor/resource/css/main.css" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /css/main.css HTTP/1.1", host: "localhost:9000", referrer: "http://localhost:9000/rfc-2069.html"
+2013/10/18 17:10:49 [error] 25919#0: *3 open() "/Users/minddriven/workspace/play_tor/resource/favicon.ico" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /favicon.ico HTTP/1.1", host: "localhost:9000"
+2013/10/18 17:11:26 [error] 25919#0: *3 open() "/Users/minddriven/workspace/play_tor/resource/favicon.ico" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /favicon.ico HTTP/1.1", host: "localhost:9000"
+2013/10/18 17:12:21 [error] 25919#0: *3 open() "/Users/minddriven/workspace/play_tor/resource/favicon.ico" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /favicon.ico HTTP/1.1", host: "localhost:9000"
+2013/10/18 17:13:40 [emerg] 26378#0: bind() to 0.0.0.0:9000 failed (48: Address already in use)
+2013/10/18 17:13:40 [emerg] 26378#0: bind() to 0.0.0.0:9000 failed (48: Address already in use)
+2013/10/18 17:13:40 [emerg] 26378#0: bind() to 0.0.0.0:9000 failed (48: Address already in use)
+2013/10/18 17:13:40 [emerg] 26378#0: bind() to 0.0.0.0:9000 failed (48: Address already in use)
+2013/10/18 17:13:40 [emerg] 26378#0: bind() to 0.0.0.0:9000 failed (48: Address already in use)
+2013/10/18 17:13:40 [emerg] 26378#0: still could not bind()
+2013/10/18 17:14:29 [error] 25919#0: *10 open() "/Users/minddriven/workspace/play_tor/resource/favicon.ico" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /favicon.ico HTTP/1.1", host: "localhost:9000"
+2013/10/20 13:03:09 [error] 37071#0: *13 open() "/Users/minddriven/workspace/play_tor/resource/css/main.css" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /css/main.css HTTP/1.1", host: "localhost:9000", referrer: "http://localhost:9000/rfc-2069.html"
+2013/10/20 22:41:15 [error] 4576#0: *22 open() "/Users/minddriven/workspace/play_tor/resource/ba.txt" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /ba.txt HTTP/1.1", host: "localhost:9000"
+2013/10/20 22:41:23 [error] 4576#0: *23 open() "/Users/minddriven/workspace/play_tor/resource/ab.txt" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /ab.txt HTTP/1.1", host: "localhost:9000"
+2013/10/20 22:41:23 [error] 4576#0: *23 open() "/Users/minddriven/workspace/play_tor/resource/ba.txt" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /ba.txt HTTP/1.1", host: "localhost:9000"
+2013/10/20 22:42:14 [error] 4576#0: *24 open() "/Users/minddriven/workspace/play_tor/resource/ab.txt" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /ab.txt HTTP/1.1", host: "localhost:9000"
+2013/10/20 22:42:41 [error] 4576#0: *25 open() "/Users/minddriven/workspace/play_tor/resource/ba.txt" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /ba.txt HTTP/1.1", host: "localhost:9000"
+2013/10/20 22:49:20 [error] 4576#0: *26 open() "/Users/minddriven/workspace/play_tor/resource/ab.txt" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /ab.txt HTTP/1.1", host: "localhost:9000"
+2013/10/20 22:49:21 [error] 4576#0: *26 open() "/Users/minddriven/workspace/play_tor/resource/ba.txt" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /ba.txt HTTP/1.1", host: "localhost:9000"
+2013/10/20 22:50:01 [error] 4576#0: *27 open() "/Users/minddriven/workspace/play_tor/resource/ab.txt" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /ab.txt HTTP/1.1", host: "localhost:9000"
+2013/10/20 22:50:02 [error] 4576#0: *27 open() "/Users/minddriven/workspace/play_tor/resource/ba.txt" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /ba.txt HTTP/1.1", host: "localhost:9000"
+2013/10/21 15:09:33 [emerg] 26125#0: bind() to 0.0.0.0:9000 failed (48: Address already in use)
+2013/10/21 15:09:33 [emerg] 26125#0: bind() to 0.0.0.0:9000 failed (48: Address already in use)
+2013/10/21 15:09:33 [emerg] 26125#0: bind() to 0.0.0.0:9000 failed (48: Address already in use)
+2013/10/21 15:09:33 [emerg] 26125#0: bind() to 0.0.0.0:9000 failed (48: Address already in use)
+2013/10/21 15:09:33 [emerg] 26125#0: bind() to 0.0.0.0:9000 failed (48: Address already in use)
+2013/10/21 15:10:20 [alert] 4574#0: unlink() "/Users/minddriven/workspace/play_tor/logs/nginx.pid" failed (2: No such file or directory)
+2013/10/21 15:11:23 [emerg] 26358#0: bind() to 0.0.0.0:9000 failed (48: Address already in use)
+2013/10/21 15:11:23 [emerg] 26358#0: bind() to 0.0.0.0:9000 failed (48: Address already in use)
+2013/10/21 15:11:23 [emerg] 26358#0: bind() to 0.0.0.0:9000 failed (48: Address already in use)
+2013/10/21 15:11:23 [emerg] 26358#0: bind() to 0.0.0.0:9000 failed (48: Address already in use)
+2013/10/23 11:04:36 [error] 44276#0: *6 open() "/Users/minddriven/workspace/tornado_alive_httpclient/tests/resource/favicon.ico" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /favicon.ico HTTP/1.1", host: "localhost:9443"
+2013/10/23 11:04:38 [error] 44276#0: *6 open() "/Users/minddriven/workspace/tornado_alive_httpclient/tests/resource/css/main.css" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /css/main.css HTTP/1.1", host: "localhost:9443", referrer: "https://localhost:9443/rfc-2069.html"
+2013/10/25 16:39:41 [error] 2682#0: *1 open() "/Users/minddriven/workspace/tornado_alive_httpclient/tests/nginx/resource/favicon.ico" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /favicon.ico HTTP/1.1", host: "localhost:9000"
+2013/10/25 16:40:02 [error] 2707#0: *2 open() "/Users/minddriven/workspace/tornado_alive_httpclient/tests/nginx/resource/favicon.ico" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /favicon.ico HTTP/1.1", host: "localhost:9443"
+2013/10/25 16:40:10 [error] 2707#0: *5 open() "/Users/minddriven/workspace/tornado_alive_httpclient/tests/nginx/resource/favicon.ico" failed (2: No such file or directory), client: 127.0.0.1, server: , request: "GET /favicon.ico HTTP/1.1", host: "localhost:9443", referrer: "https://localhost:9443/a.txt"

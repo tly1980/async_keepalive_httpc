@@ -3,10 +3,10 @@
 import tornado.ioloop
 import tornado.iostream
 import socket
-import cStringIO as StringIO
+
 
 def send_request():
-    stream.write(b"GET / HTTP/1.0\r\nHost: friendfeed.com\r\n\r\n")
+    stream.write(b"GET /a.txt HTTP/1.1\r\nHost: localhost\r\n\r\n")
     stream.read_until(b"\r\n\r\n", on_headers)
 
 def on_headers(data):
@@ -19,13 +19,14 @@ def on_headers(data):
     stream.read_bytes(int(headers[b"Content-Length"]), on_body)
 
 def on_body(data):
-    #import ipdb; ipdb.set_trace()
     print data
     stream.close()
     tornado.ioloop.IOLoop.instance().stop()
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-stream = tornado.iostream.IOStream(s)
-stream.connect(("friendfeed.com", 80), send_request)
+
+
+stream = tornado.iostream.SSLIOStream(s)
+stream.connect(("localhost", 9443), send_request)
 tornado.ioloop.IOLoop.instance().start()
 

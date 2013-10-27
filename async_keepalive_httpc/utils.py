@@ -11,7 +11,7 @@ import tornado.ioloop
 import tornado.iostream
 
 
-class SmartUrl(object):
+class UrlInfo(object):
     def __init__(self, url):
         self.p = urlparse.urlparse(url)
 
@@ -53,38 +53,62 @@ class Request(object):
     http_ret_pattern = re.compile('^[^\s]+ (\d+) (.+)$')
 
     default_headers = {
-        "Accept": "*/*", 
-        "User-Agent": "KeepAliveHttpClient"
+        'Accept': '*/*',
+        'User-Agent': 'KeepAliveHttpClient',
+        'Connection': 'Keep-Alive',
     }
 
-    def __init__(self, the_url, method="GET", cb=None, exception_cb=None, extra_headers=[]):
+    def __init__(self, url_info, method="GET", callback=None, extra_headers=[], version='1.1'):
         self.finish_cb = None
-        self.the_url = the_url
+        self.url_info = url_info
         self.method = method
-        self.cb = cb
-        self.exception_cb = exception_cb
+        assert callback != None
+        self.cb = callback
         self.headers = {}
         self.extra_headers = extra_headers
         self.logger = logging.getLogger(Request.__class__.__name__)
+        self.version = version
 
         self.resp_header = {}
         self.resp_code = None
         self.resp_text = None
         self.resp_data = None
-
+        self.close_after_finish = False
         self.try_count = 0
+        self.is_server_keep_alive = False
+        self.finishes_at = None
+        self.started_at = None
+        self.elapsed = None
+        self.stage = 'created'
+        self.error = None
+        self.should_disconnect = True
+
+    @property
+    def uri(self):
+        return self.url_info.uri
+
+    def reset(self):
+        self.stage = 'reseted'
+        self.finishes_at = None
+        self.started_at = None
+        self.elapsed = None
+        self.last_action_at = None
+
+    def tick_elapsed(self):
+        if self.stage not in ['created', 'reseted']:
+            self.elapsed = datetime.datetime.now() - self.started_at
 
     def set_finish_cb(self, cb):
         self.finish_cb = cb
 
-    def header(self, version='1.1'):
+    def header(self):
         str_buf = StringIO.StringIO()
 
         str_buf.write(
             self.head_tpl.format(
                 method=self.method,
-                uri=self.the_url.uri, 
-                version=version
+                uri=self.url_info.uri, 
+                version=self.version
             )
         )
 
@@ -93,7 +117,7 @@ class Request(object):
         headers = {}
         headers.update(self.default_headers)
         headers.update(self.extra_headers)
-        headers['Host'] = self.the_url.p.netloc
+        headers['Host'] = self.url_info.p.netloc
 
         for h in ['Host', 'Accept', 'User-Agent']:
             str_buf.write(b'{}: {}'.format(h, headers.pop(h)))
@@ -108,19 +132,33 @@ class Request(object):
         return ret
 
     def action(self, stream):
+        self.started_at = datetime.datetime.now()
+        self.stage = 'started'
         self.try_count += 1
         self.stream = stream
         self.stream.write(self.header())
         self.stream.read_until(
             b"\r\n\r\n", self._on_header)
 
-    def _exception_cb(self, headers, e):
-        self.logger.warn('Failed to perform: {} {}', self.method, self.the_url.uri)
-        if e:
-            self.logger.exception(e)
+    def _exception_handle(self, e):
+        self.should_disconnect = True
+        self.error = e
+        self.logger.warn('Failed to perform: {} {}'.format(self.method, 
+            self.url_info.uri))
+
+        if self.error:
+            self.logger.exception(self.error)
+        try: 
+            self.cb(self)
+        finally:
+            self._on_finish()
 
     def _on_header(self, data):
-        import ipdb; ipdb.set_trace()
+        if self.stage == 'reseted':
+            return
+
+        self.stage = 'on_header'
+        self.last_action_at = datetime.datetime.now()
         self.resp_header = {}
         lines = data.split(b"\r\n")
 
@@ -133,78 +171,205 @@ class Request(object):
             for line in lines[1:] :
                parts = line.split(b":")
                if len(parts) == 2:
-                   self.headers[parts[0].strip()] = parts[1].strip()
+                   self.resp_header[parts[0].strip()] = parts[1].strip()
 
-            if b'Content-Length' in self.headers:
+            if 'Connection' in self.resp_header:
+                if self.resp_header['Connection'].lower() == 'keep-alive':
+                    self.should_disconnect = False
+
+            if 'Content-Length' in self.resp_header:
                 self.stream.read_bytes(
-                    int(self.headers[b'Content-Length']), self._on_body)
+                    int(self.resp_header[b'Content-Length']), self._on_body)
             else:
-                self.exception_cb(self, None)
+                self._exception_handle('Chunk encoding not supported')
         except Exception, e:
-            self.exception_cb(self, e)
-            self._on_finish()
+            self._exception_handle(e)
 
     def _on_body(self, data):
+        if self.stage == 'reseted':
+            return
+
+        self.stage = 'on_body'
+        self.last_action_at = datetime.datetime.now()
         try:
             self.resp_data = data
             self.cb(self)
         except Exception, e:
-            self.exception_cb(self.headers, e)
+            self._exception_handle(e)
         finally:
             self._on_finish()
 
     def _on_finish(self):
+        if self.stage == 'reseted':
+            return
+
+        self.stage = 'finished'
+        self.tick_elapsed()
         '''
         Set self.stream to None and call the finish_cb
         '''
         self.stream = None
+        self.finishes_at = datetime.datetime.now()
         self.finish_cb(self)
+
+    def timeout(self):
+        self.stage = 'timeout'
+        self.current_request = None
+        self._exception_handle('Timeout')
+
+
+class IdleTimer(object):
+    def __init__(self):
+        now = datetime.datetime.now()
+        self.idle_start = now
+        self.last_idle = now
+
+    def tick(self):
+        self.last_idle = datetime.datetime.now()
+
+    def reset(self):
+        now = datetime.datetime.now()
+        self.idle_start = now
+        self.last_idle = now
+
+    @property
+    def idle_elapsed(self):
+        return self.last_idle - self.idle_start
 
 
 class StreamQueueManager(object):
-    def __init__(self, host, port, is_ssl):
+
+
+    def __init__(self, io_loop, host, port, is_ssl, 
+            request_timeout=datetime.timedelta(seconds=30),
+            idle_timout=datetime.timedelta(seconds=30),
+            check_feq = datetime.timedelta(seconds=1)
+        ):
+
+        self.logger = logging.getLogger(StreamQueueManager.__class__.__name__)
+
         self._q = collections.deque([])
 
         self.host = host
         self.port = port
+        self.io_loop = io_loop
 
         self.is_ssl = is_ssl
         self.stream = None
-        self.idle_duration = 0
-        self.last_idle = datetime.datetime.now()
 
         self.current_request = None
+        self.last_request = None
+        self.connect_count = 0
+
+        self.idle_timer = IdleTimer()
+
+        self.request_timeout = request_timeout
+        self.idle_timout = idle_timout
+
+        self.check_scheduler = tornado.ioloop.PeriodicCallback(
+            self.check,
+            check_feq.total_seconds() * 1000,
+            io_loop=self.io_loop
+        )
+
+        self.check_scheduler.start()
+
+    def _update_request(self):
+        self.logger.info("_update_request: %s" % self.current_request.url_info.uri)
+        if self.current_request:
+            self.last_request = self.current_request
+            self.current_request = None
+
+            if self.last_request.should_disconnect:
+                self.disconnect()
+
+    @property
+    def waiting_len(self):
+        return len(self._q)
+
+    def close(self):
+        self.logger.info("close")
+        self.check_scheduler.stop()
+
+        try:
+            self.stream.close()
+        except Exception, e:
+            self.logger.exception(e)
+
+        self.stream = None
 
     def connect(self):
+        self.logger.info('connecting to {}:{}'.format(self.host, self.port))
+        self.connect_count += 1
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-        self.stream = tornado.iostream.IOStream(s)
+
+        self.stream = tornado.iostream.IOStream(s, 
+            io_loop=self.io_loop)
+        self.logger.info("stream created: %s" % self.stream)
         self.stream.connect(
             (self.host, int(self.port)),
             self.process_request)
+
         self.stream.set_close_callback(self._on_stream_close)
 
+    def disconnect(self):
+        self.idle_timer.reset()
+        self.logger.info('disconnecting...')
+        try:
+            if self.stream:
+                self.stream.close()
+        except Exception, e:
+            self.logger.exception(e)
+        finally:
+            self.stream = None
+
+    def check(self, *args, **kwargs):
+        self.logger.info("check")
+        if self.current_request:
+            self.current_request.tick_elapsed()
+
+            if self.current_request.elapsed >= self.request_timeout:
+                self.current_request.timeout()
+
+        if len(self._q):
+            self.process_request()
+        else:
+            self.idle_timer.tick()
+
+            if self.idle_timer.idle_elapsed >= self.idle_timout:
+                self.logger.info('idle timeout')
+                self.disconnect()
+
+
     def process_request(self):
-        if not self.stream:
+        self.logger.info("process_request")
+        if self.stream is None and len(self._q):
+            self.logger.info("1")
+            self.connect()
+            return
+
+        if self.stream.closed() and len(self._q):
+            self.logger.info("2")
             self.connect()
             return
 
         if self.current_request:
+            self.logger.info("3")
             return
 
         if len(self._q):
+            self.logger.info("4")
             self.current_request = self._q.popleft()
             self.current_request.action(self.stream)
-            self.idle_duration = datetime.timedelta()
-        else:
-            now = datetime.datetime.now()
-            self.idle_duration = now - self.last_idle
-            self.last_idle = now
-            print "idle", self.idle_duration
+            self.idle_timer.reset()
+            return
+
+        self.logger.info("5")
 
 
     def _on_request_finished(self, request):
         assert(request == self.current_request)
-        self.current_request = None
+        self._update_request()
         self.process_request()
     
     def add(self, request):
@@ -216,7 +381,12 @@ class StreamQueueManager(object):
         self._q.append(request)
 
     def _on_stream_close(self):
-        self.current_request = None
-        if len(self._q) > 0:
-            self.connect()
+        # try:
+        #     if self.stream:
+        #         self.stream.close()
+        # except Exception, e:
+        #     self.logger.exception(e)
+        # finally:
+        #self.stream = None
+        pass
 
