@@ -1,46 +1,42 @@
 import datetime
-import time
 
 
 import tornado.httpserver
 from tornado.testing import AsyncTestCase, gen_test
-from tornado.httpclient import AsyncHTTPClient
+#from tornado.httpclient import AsyncHTTPClient
 from tornado import gen
 
 
-from async_keepalive_httpc.utils import StreamQueueManager, Request, UrlInfo
-
-import logging
-
-logging.basicConfig(level=logging.INFO)
-
-class SimpleTestCase(AsyncTestCase):
-    '''
-    This would be treated as a simple template
-    '''
-    port = 8888
-
-    def create_server(self):
-        def handle_request(request):
-            message = "You requested %s\n" % request.uri
-            request.write("HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n%s" % (len(message), message))
-            request.finish()
-
-        self.http_server = tornado.httpserver.HTTPServer(handle_request, io_loop=self.io_loop)
-        self.http_server.listen(self.port)
-
-    def test_http_fetch(self):
-        self.create_server()
-        client = AsyncHTTPClient(self.io_loop)
-        client.fetch('http://localhost:{}/a.txt'.format(self.port), self.handle_fetch)
-        self.wait()
-
-    def handle_fetch(self, response):
-        self.assertIn("a.txt", response.body)
-        self.stop()
+from async_keepalive_httpc.request import QueueManager, Request, UrlInfo
 
 
-class StreamQueueManagerTest(AsyncTestCase):
+# class SimpleTestCase(AsyncTestCase):
+#     '''
+#     This would be treated as a simple template
+#     '''
+#     port = 8888
+
+#     def create_server(self):
+#         def handle_request(request):
+#             message = "You requested %s\n" % request.uri
+#             request.write("HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n%s" % (len(message), message))
+#             request.finish()
+
+#         self.http_server = tornado.httpserver.HTTPServer(handle_request, io_loop=self.io_loop)
+#         self.http_server.listen(self.port)
+
+#     def test_http_fetch(self):
+#         self.create_server()
+#         client = AsyncHTTPClient(self.io_loop)
+#         client.fetch('http://localhost:{}/a.txt'.format(self.port), self.handle_fetch)
+#         self.wait()
+
+#     def handle_fetch(self, response):
+#         self.assertIn("a.txt", response.body)
+#         self.stop()
+
+
+class QueueManagerTestCase(AsyncTestCase):
     '''
     This would be treated as a simple template
     '''
@@ -66,7 +62,7 @@ class StreamQueueManagerTest(AsyncTestCase):
     @gen_test
     def test_keep_alive_get(self):
         self.create_server()
-        self.sq_mgr = StreamQueueManager(self.io_loop, 
+        self.sq_mgr = QueueManager(self.io_loop, 
             'localhost', self.port, False)
 
         a, b, c = yield [
@@ -89,7 +85,7 @@ class StreamQueueManagerTest(AsyncTestCase):
     @gen_test(timeout=10)
     def test_request_timeout(self):
         self.create_server()
-        self.sq_mgr = StreamQueueManager(self.io_loop, 
+        self.sq_mgr = QueueManager(self.io_loop, 
             'localhost', self.port, False,
             request_timeout=datetime.timedelta(seconds=2.5))
 
@@ -114,7 +110,7 @@ class StreamQueueManagerTest(AsyncTestCase):
         '''
 
         self.create_server()
-        self.sq_mgr = StreamQueueManager(self.io_loop, 
+        self.sq_mgr = QueueManager(self.io_loop, 
             'localhost', self.port, False,
             idle_timout=datetime.timedelta(seconds=1),
             check_feq = datetime.timedelta(seconds=0.1))
@@ -156,7 +152,7 @@ class StreamQueueManagerTest(AsyncTestCase):
     @gen_test()
     def test_update_request(self):
         self.create_server()
-        self.sq_mgr = StreamQueueManager(self.io_loop, 
+        self.sq_mgr = QueueManager(self.io_loop, 
             'localhost', self.port, False,
             idle_timout=datetime.timedelta(seconds=1),
             check_feq = datetime.timedelta(seconds=0.1))

@@ -237,7 +237,7 @@ class IdleTimer(object):
         return self.last_idle - self.idle_start
 
 
-class StreamQueueManager(object):
+class QueueManager(object):
 
 
     def __init__(self, io_loop, host, port, is_ssl, 
@@ -246,7 +246,7 @@ class StreamQueueManager(object):
             check_feq = datetime.timedelta(seconds=1)
         ):
 
-        self.logger = logging.getLogger(StreamQueueManager.__class__.__name__)
+        self.logger = logging.getLogger(QueueManager.__class__.__name__)
 
         self._q = collections.deque([])
 

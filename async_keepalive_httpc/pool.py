@@ -7,7 +7,7 @@ import pprint
 import tornado.ioloop
 import tornado.iostream
 
-from .utils import UrlInfo, Request, StreamQueueManager
+from .request import UrlInfo, Request, StreamQueueManager
 
 
 class KeepAlivePool(object):
