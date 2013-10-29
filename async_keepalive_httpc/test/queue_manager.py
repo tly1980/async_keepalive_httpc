@@ -86,11 +86,37 @@ class QueueManagerTestCase(AsyncTestCase):
           gen.Task(self.get, 'http://localhost:{}/c.txt'.format(self.port))
         ]
 
-        self.assertEqual(0, len(self.sq_mgr._q))
+        self.assertEqual(0, self.sq_mgr.waiting_len)
         self.assertIn('a.txt', a.resp_data)
         self.assertIn('b.txt', b.resp_data)
         self.assertIn('c.txt', c.resp_data)
         self.assertEqual(self.sq_mgr.connect_count, 1)
+
+    @gen_test
+    def test_keep_alive_get_2(self):
+        self.create_server()
+        self.sq_mgr = QueueManager(self.io_loop, 
+            'localhost', self.port, False)
+
+
+        # t1 = gen.Task(self.get, 'http://localhost:{}/a.txt'.format(self.port)),
+        # t2 = gen.Task(self.get, 'http://localhost:{}/b.txt'.format(self.port)),
+        # t3 = gen.Task(self.get, 'http://localhost:{}/c.txt'.format(self.port))
+
+        self.get('http://localhost:{}/a.txt'.format(self.port), 
+                lambda a: self.assertIn('a.txt', a.resp_data))
+
+        self.get('http://localhost:{}/b.txt'.format(self.port), 
+                lambda b: self.assertIn('b.txt', b.resp_data))
+
+        self.assertEqual(2, self.sq_mgr.waiting_len)
+
+        c = yield gen.Task(self.get, 'http://localhost:{}/c.txt'.format(self.port))
+
+        self.assertIn('c.txt', c.resp_data)
+
+        self.assertEqual(self.sq_mgr.connect_count, 1)
+
 
     def get(self, url, callback=None):
         url_info = UrlInfo(url)
