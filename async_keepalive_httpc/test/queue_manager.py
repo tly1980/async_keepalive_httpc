@@ -50,6 +50,12 @@ class UrlInfoTest(unittest.TestCase):
         self.assertEqual(urlinfo.is_ssl, True)
         self.assertEqual(urlinfo.is_ssl, True)
 
+    def test_https(self):
+        urlinfo = UrlInfo('https://localhost:9443/abc')
+        self.assertEqual(urlinfo.port, 9443)
+        self.assertEqual(urlinfo.is_ssl, True)
+        self.assertEqual(urlinfo.is_ssl, True)
+
 
 class QueueManagerTestCase(AsyncTestCase):
     '''
