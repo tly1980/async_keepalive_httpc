@@ -1,5 +1,7 @@
 dump.txt
+cover
 .python-version
+.cover
 tests/logs
 *.pid
 *.pyc

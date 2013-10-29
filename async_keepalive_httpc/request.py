@@ -17,10 +17,12 @@ class UrlInfo(object):
 
     @property
     def uri(self):
-        if not self.p.params:
-            return self.p.path 
-        else:
-            return self.p.path + '?' + self.p.params
+        return self.p.path 
+
+    @property
+    def uri_with_query(self):
+        return self.p.path + '?' + self.p.query
+
 
     @property
     def port(self):

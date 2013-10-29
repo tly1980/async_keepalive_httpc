@@ -1,5 +1,5 @@
 import datetime
-
+import unittest
 
 import tornado.httpserver
 from tornado.testing import AsyncTestCase, gen_test
@@ -34,6 +34,21 @@ from async_keepalive_httpc.request import QueueManager, Request, UrlInfo
 #     def handle_fetch(self, response):
 #         self.assertIn("a.txt", response.body)
 #         self.stop()
+
+
+class UrlInfoTest(unittest.TestCase):
+    def test_http(self):
+        urlinfo = UrlInfo('http://LOCALHOST/abc?a=23&b=456')
+        self.assertEqual(urlinfo.host, 'localhost')
+        self.assertEqual(urlinfo.port, 80)
+        self.assertEqual(urlinfo.is_ssl, False)
+        self.assertEqual(urlinfo.uri_with_query, '/abc?a=23&b=456')
+
+    def test_https(self):
+        urlinfo = UrlInfo('https://localhost/abc')
+        self.assertEqual(urlinfo.port, 443)
+        self.assertEqual(urlinfo.is_ssl, True)
+        self.assertEqual(urlinfo.is_ssl, True)
 
 
 class QueueManagerTestCase(AsyncTestCase):
