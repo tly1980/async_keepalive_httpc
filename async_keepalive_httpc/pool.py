@@ -1,13 +1,10 @@
 #!/usr/bin/env python
-import cStringIO as StringIO
 import logging
-import datetime
-import pprint
 
 import tornado.ioloop
 import tornado.iostream
 
-from .request import UrlInfo, Request, StreamQueueManager
+from .request import QueueManager
 
 
 class KeepAlivePool(object):
@@ -30,7 +27,7 @@ class KeepAlivePool(object):
         if len(fast_sq_mgr.waiting_len) == 0 or len(self._pool) == self.max_count:
             return fast_sq_mgr
 
-        sq_mgr = StreamQueueManager(self.host, self.port, self.is_ssl)
+        sq_mgr = QueueManager(self.host, self.port, self.is_ssl)
         self._pool.append(sq_mgr)
 
         return sq_mgr
