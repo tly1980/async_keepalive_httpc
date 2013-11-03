@@ -15,7 +15,6 @@ def on_headers(data):
        parts = line.split(b":")
        if len(parts) == 2:
            headers[parts[0].strip()] = parts[1].strip()
-    #import ipdb; ipdb.set_trace()
     stream.read_bytes(int(headers[b"Content-Length"]), on_body)
 
 def on_body(data):

@@ -5,3 +5,4 @@ cover
 tests/logs
 *.pid
 *.pyc
+aws_keypair.yaml

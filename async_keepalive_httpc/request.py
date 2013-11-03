@@ -56,11 +56,11 @@ class Request(object):
 
     default_headers = {
         'Accept': '*/*',
-        'User-Agent': 'KeepAliveHttpClient',
+        'User-Agent': 'AsyncKeepAliveHttpC',
         'Connection': 'Keep-Alive',
     }
 
-    def __init__(self, url_info, method="GET", callback=None, extra_headers=[], version='1.1'):
+    def __init__(self, url_info, method="GET", body=None, callback=None, extra_headers=[], version='1.1'):
         self.finish_cb = None
         self.url_info = url_info
         self.method = method
@@ -84,6 +84,7 @@ class Request(object):
         self.stage = 'created'
         self.error = None
         self.should_disconnect = True
+        self.body = body
 
     @property
     def uri(self):
@@ -103,7 +104,7 @@ class Request(object):
     def set_finish_cb(self, cb):
         self.finish_cb = cb
 
-    def header(self):
+    def req(self):
         str_buf = StringIO.StringIO()
 
         str_buf.write(
@@ -121,15 +122,23 @@ class Request(object):
         headers.update(self.extra_headers)
         headers['Host'] = self.url_info.p.netloc
 
+        if self.body:
+            headers['Content-Length'] = len(self.body)
+
         for h in ['Host', 'Accept', 'User-Agent']:
-            str_buf.write(b'{}: {}'.format(h, headers.pop(h)))
-            str_buf.write(b'\r\n')
+            if h in headers:
+                str_buf.write(b'{}: {}'.format(h, headers.pop(h)))
+                str_buf.write(b'\r\n')
 
         for h, v in headers.items():
             str_buf.write(b'{}: {}'.format(h, headers.pop(h)))
             str_buf.write(b'\r\n')
 
         str_buf.write(b'\r\n')
+
+        if self.body:
+            str_buf.write(self.body)
+
         ret = str_buf.getvalue()
         return ret
 
@@ -138,7 +147,11 @@ class Request(object):
         self.stage = 'started'
         self.try_count += 1
         self.stream = stream
-        self.stream.write(self.header())
+        req = self.req()
+
+        self.stream.write(req)
+        self.logger.debug(req)
+
         self.stream.read_until(
             b"\r\n\r\n", self._on_header)
 
@@ -147,13 +160,10 @@ class Request(object):
         self.error = e
         self.logger.warn('Failed to perform: {} {}'.format(self.method, 
             self.url_info.uri))
-
         if self.error:
             self.logger.exception(self.error)
-        try: 
-            self.cb(self)
-        finally:
-            self._on_finish()
+
+        self._on_finish()
 
     def _on_header(self, data):
         if self.stage == 'reseted':
@@ -166,7 +176,7 @@ class Request(object):
 
         m = self.http_ret_pattern.match(lines[0])
         if m:
-            self.resp_code = m.groups()[0]
+            self.resp_code = int(m.groups()[0])
             self.resp_text = m.groups()[1]
 
         try:
@@ -241,14 +251,17 @@ class IdleTimer(object):
 
 class QueueManager(object):
 
-
     def __init__(self, io_loop, host, port, is_ssl, 
             request_timeout=datetime.timedelta(seconds=30),
             idle_timout=datetime.timedelta(seconds=30),
-            check_feq = datetime.timedelta(seconds=1)
+            check_feq = datetime.timedelta(seconds=1),
+            name = None
         ):
 
-        self.logger = logging.getLogger(QueueManager.__class__.__name__)
+        if name:
+            self.logger = logging.getLogger(QueueManager.__class__.__name__ + "-" + name)
+        else:
+            self.logger = logging.getLogger(QueueManager.__class__.__name__)
 
         self._q = collections.deque([])
 
@@ -276,6 +289,8 @@ class QueueManager(object):
 
         self.check_scheduler.start()
 
+        self.io_loop.add_callback(self.check)
+
     def _update_request(self):
         self.logger.info("_update_request: %s" % self.current_request.url_info.uri)
         if self.current_request:
@@ -283,6 +298,7 @@ class QueueManager(object):
             self.current_request = None
 
             if self.last_request.should_disconnect:
+                self.logger.info("last_request does not support connection keep-alive")
                 self.disconnect()
 
     @property
@@ -305,8 +321,13 @@ class QueueManager(object):
         self.connect_count += 1
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
 
-        self.stream = tornado.iostream.IOStream(s, 
-            io_loop=self.io_loop)
+        if not self.is_ssl:
+            self.stream = tornado.iostream.IOStream(s, 
+                io_loop=self.io_loop)
+        else:
+            self.stream = tornado.iostream.SSLIOStream(
+                s, io_loop=self.io_loop)
+
         self.logger.info("stream created: %s" % self.stream)
         self.stream.connect(
             (self.host, int(self.port)),
@@ -345,8 +366,11 @@ class QueueManager(object):
 
     def process_request(self):
         self.logger.info("process_request")
+        if not self.stream and len(self._q) == 0:
+            return
+
         if self.stream is None and len(self._q):
-            self.logger.info("1")
+            self.logger.info("1: %s" % self.stream)
             self.connect()
             return
 

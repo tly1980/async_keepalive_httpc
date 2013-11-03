@@ -22,12 +22,28 @@ class KeepAlivePool(object):
             KeepAlivePool.__class__.__name__)
         self.io_loop = io_loop
 
+    def _increase(self):
+        if len(self._pool) < self.max_count:
+            sq_mgr = QueueManager(
+                self.io_loop, 
+                self.host, self.port, self.is_ssl,
+                name='queue_mgr-%s' % len(self._pool))
+
+            self._pool.append(sq_mgr)
+
+            return sq_mgr
+
     def get(self):
+        if not self._pool:
+            return self._increase()
+
         fast_sq_mgr = min(self._pool, key=lambda s:s.waiting_len)
-        if len(fast_sq_mgr.waiting_len) == 0 or len(self._pool) == self.max_count:
+
+        if fast_sq_mgr.waiting_len == 0:
             return fast_sq_mgr
 
-        sq_mgr = QueueManager(self.host, self.port, self.is_ssl)
-        self._pool.append(sq_mgr)
+        if len(self._pool) < self.max_count:
+            return self._increase()
 
-        return sq_mgr
+        return fast_sq_mgr
+
