@@ -1,5 +1,3 @@
-import tornado.httpclient
-import tornado.gen
 import botocore.credentials
 from botocore.auth import SigV4Auth
 import datetime
@@ -7,7 +5,8 @@ import datetime
 
 class DummyRequest(object):
     '''
-    A FakeRequest that provide all the necessary properties and interface for botocore to authenticate
+    A DummyRequest that provide all the necessary properties and interface for botocore to authenticate
+    Important: it would create a new dict to copy the headers, so that it would not messed with the original dict.
     '''
 
     def __init__(
@@ -17,40 +16,6 @@ class DummyRequest(object):
         self.method = method
         self.params = dict(params)
         self.body=body
-
-
-def sqs_request(msg):
-    query = {
-        'Action': 'SendMessage', 
-        'MessageBody': msg,
-        'Version': '2012-11-05',
-        'Connection': 'Keep-Alive'
-    }
-
-    l = ['='.join([k, query[k]]) for k in sorted(query.keys())]
-    body = '&'.join(l)
-    
-    
-    frequset = DummyRequest(
-        'POST',
-        SQS_ENDPOINT,
-        headers={
-            'Content-type': 'application/x-www-form-urlencoded; charset=utf-8'
-        },
-        body=body
-    )
-
-    credentials = botocore.credentials.Credentials(
-            ACCESS_KEY, SECRET_KEY)
-
-    s = SigV4Auth(credentials, 'sqs', 'ap-southeast-2')
-    s.add_auth(frequset)
-    return tornado.httpclient.HTTPRequest(
-        frequset.url,
-        method=frequset.method,
-        headers=frequset.headers,
-        body=frequset.body
-    )
 
 
 class EasyV4Sign(object):
