@@ -44,7 +44,7 @@ class EasyV4SignTest(unittest.TestCase):
     #     )
 
 
-    def test_sign_post(self):
+    def test_sign_get(self):
         ACCESS_KEY = 'AKIDEXAMPLE'
         SECRET_KEY = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY"
         
@@ -57,12 +57,15 @@ class EasyV4SignTest(unittest.TestCase):
 
         timestamp = '20110909T233600Z'
 
-        params = {
-             'foo': 'ListUsers',
-             'Version': '2010-05-08'
-        }
-
+        headers = {'Date':'Mon, 09 Sep 2011 23:36:00 GMT'}
         x_method, x_url, x_headers, x_body = v4sign.sign_get(
-            self.Q_URL, params=params, timestamp=timestamp)
+            'http://host.foo.com', headers, params={}, timestamp=timestamp)
+
+        print x_headers
+
+        self.assertTrue('b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470' if __name__ == '__main__':
+            '')
+
+        
 
 
