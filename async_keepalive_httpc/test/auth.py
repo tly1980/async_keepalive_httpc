@@ -73,21 +73,23 @@ class EasyV4SignTest(unittest.TestCase):
         v4sign = EasyV4Sign(
             ACCESS_KEY, 
             SECRET_KEY,
-            'iam.amazonaws.com',
+            'iam',
             endpoint='us-east-1',
         )
 
         timestamp = '20110909T233600Z'
 
-        headers = {}
-        data = {'Version': '2010-05-08',
-        'ACtion': 'ListUser'}
+        headers = {'Content-type': 'application/x-www-form-urlencoded; charset=utf-8'}
+        data = {
+            'Version': '2010-05-08',
+            'Action': 'ListUsers'
+        }
         x_method, x_url, x_headers, x_body = v4sign.sign_post(
-            'http://host.foo.com', headers, data=data, timestamp=timestamp)
+            'http://iam.amazonaws.com/', headers, data=data, timestamp=timestamp)
         
         self.assertNotEqual(x_headers, headers)
 
-        self.assertTrue('b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470' in
+        self.assertTrue('ced6826de92d2bdeed8f846f0bf508e8559e98e4b0199114b84c54174deb456c' in
             x_headers['Authorization'])
 
 
