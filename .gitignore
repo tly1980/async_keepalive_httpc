@@ -6,3 +6,6 @@ tests/logs
 *.pid
 *.pyc
 aws_keypair.yaml
+LICENSE
+dist
+*.egg-info

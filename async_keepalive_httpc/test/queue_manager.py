@@ -107,11 +107,6 @@ class QueueManagerTestCase(AsyncTestCase):
         self.sq_mgr = QueueManager(self.io_loop, 
             'localhost', self.port, False)
 
-
-        # t1 = gen.Task(self.get, 'http://localhost:{}/a.txt'.format(self.port)),
-        # t2 = gen.Task(self.get, 'http://localhost:{}/b.txt'.format(self.port)),
-        # t3 = gen.Task(self.get, 'http://localhost:{}/c.txt'.format(self.port))
-
         self.get('http://localhost:{}/a.txt'.format(self.port), 
                 lambda a: self.assertIn('a.txt', a.resp_data))
 

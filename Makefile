@@ -1,8 +1,5 @@
 .PHONY: build test clean nopyc
 
-build:
-	./setup.py build
-
 test:
 	nosetests
 
@@ -12,6 +9,10 @@ cover:
 clean: nopyc
 	rm -rf ./cover
 	rm -rf ./build
+	rm -rf ./dist
 
 nopyc:
 	find . -name '*.pyc' -delete
+
+dist:
+	./setup.py sdist
