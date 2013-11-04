@@ -60,12 +60,32 @@ class EasyV4SignTest(unittest.TestCase):
         headers = {'Date':'Mon, 09 Sep 2011 23:36:00 GMT'}
         x_method, x_url, x_headers, x_body = v4sign.sign_get(
             'http://host.foo.com', headers, params={}, timestamp=timestamp)
-
-        print x_headers
-
-        self.assertTrue('b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470' if __name__ == '__main__':
-            '')
-
         
+        self.assertNotEqual(x_headers, headers)
+
+        self.assertTrue('b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470' in
+            x_headers['Authorization'])
+
+    def test_sign_post(self):
+        ACCESS_KEY = 'AKIDEXAMPLE'
+        SECRET_KEY = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY"
+        
+        v4sign = EasyV4Sign(
+            ACCESS_KEY, 
+            SECRET_KEY,
+            'host',
+            endpoint='us-east-1',
+        )
+
+        timestamp = '20110909T233600Z'
+
+        headers = {'Date':'Mon, 09 Sep 2011 23:36:00 GMT'}
+        x_method, x_url, x_headers, x_body = v4sign.sign_get(
+            'http://host.foo.com', headers, params={}, timestamp=timestamp)
+        
+        self.assertNotEqual(x_headers, headers)
+
+        self.assertTrue('b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470' in
+            x_headers['Authorization'])
 
 
