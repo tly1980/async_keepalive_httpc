@@ -44,36 +44,25 @@ class EasyV4SignTest(unittest.TestCase):
     #     )
 
 
-
-
-
-    def test_sign(self):
+    def test_sign_post(self):
+        ACCESS_KEY = 'AKIDEXAMPLE'
+        SECRET_KEY = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY"
+        
         v4sign = EasyV4Sign(
-            self.ACCESS_KEY, self.SECRET_KEY,
-            'sqs',
-            endpoint='ap-southeast-2',
+            ACCESS_KEY, 
+            SECRET_KEY,
+            'host',
+            endpoint='us-east-1',
         )
 
-        timestamp = '20131103T042039Z'
+        timestamp = '20110909T233600Z'
 
-        query = {
-            'Action': 'SendMessage', 
-            'MessageBody': 'msg1',
-            'Version': '2012-11-05',
+        params = {
+             'foo': 'ListUsers',
+             'Version': '2010-05-08'
         }
 
-        headers = { 
-            'Content-type':'application/x-www-form-urlencoded; charset=utf-8'
-        }
+        x_method, x_url, x_headers, x_body = v4sign.sign_get(
+            self.Q_URL, params=params, timestamp=timestamp)
 
-        l = ['='.join([k, query[k]]) for k in sorted(query.keys())]
-        body = '&'.join(l)
-
-
-        x_method, x_url, x_headers, x_body = v4sign.sign(
-            self.Q_URL, headers, body, method='POST', timestamp=timestamp)
-
-        self.fail('aa')
-
-        
 

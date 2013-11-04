@@ -65,28 +65,25 @@ class Sender(object):
         self.access_key = access_key
         self.secret_key = secret_key
         self.endpoint = endpoint
-
-    def send(self, msg, callback=None):
-
-        v4sign = EasyV4Sign(
+        self.v4sign = EasyV4Sign(
             self.access_key, self.secret_key,
             'sqs',
             endpoint=self.endpoint
         )
 
+
+    def send(self, msg, callback=None):
+
         msg_body = urllib.quote_plus(msg)
 
-        query = {
+        data = {
             'Action': 'SendMessage', 
             'MessageBody': msg_body,
             'Version': '2012-11-05',
         }
 
-        l = ['='.join([k, query[k]]) for k in sorted(query.keys())]
-        body = '&'.join(l)
-
-        x_method, x_url, x_headers, x_body = v4sign.sign(
-            self.q_url, self._header_tpl, body, method='POST')
+        x_method, x_url, x_headers, x_body = self.v4sign.sign_post(
+            self.q_url, self._header_tpl, data=data)
 
         expact_md5 = md5_hexdigest(msg_body)
 
