@@ -22,15 +22,15 @@ setup(name='Async KeepAlive HTTP client',
       packages=['async_keepalive_httpc'],
       url="https://github.com/tly1980/async_keepalive_httpc",
       platforms='any',
-      package_data={
-        'async_keepalive_httpc': ['async_keepalive_httpc/*.json']
-      },
       install_requires = [
         'tornado>=3.0',
         'botocore>=0.20.0',
         'xmltodict>=0.8.0',
       ],
-
+      include_package_data=True,
+      package_data={
+        'async_keepalive_httpc': ['async_keepalive_httpc/VERSION.json'],
+      },
       classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Environment :: Web Environment',
