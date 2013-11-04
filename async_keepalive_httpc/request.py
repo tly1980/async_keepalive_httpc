@@ -163,6 +163,9 @@ class Request(object):
         if self.error:
             self.logger.exception(self.error)
 
+        if self.cb:
+            self.cb(self)
+
         self._on_finish()
 
     def _on_header(self, data):
@@ -215,7 +218,9 @@ class Request(object):
         if self.stage == 'reseted':
             return
 
-        self.stage = 'finished'
+        if self.stage != 'timeout':
+            self.stage = 'finished'
+
         self.tick_elapsed()
         '''
         Set self.stream to None and call the finish_cb
@@ -226,7 +231,6 @@ class Request(object):
 
     def timeout(self):
         self.stage = 'timeout'
-        self.current_request = None
         self._exception_handle('Timeout')
 
 

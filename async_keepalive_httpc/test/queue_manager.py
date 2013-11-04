@@ -137,7 +137,7 @@ class QueueManagerTestCase(AsyncTestCase):
         self.create_server()
         self.sq_mgr = QueueManager(self.io_loop, 
             'localhost', self.port, False,
-            request_timeout=datetime.timedelta(seconds=2.5))
+            request_timeout=datetime.timedelta(seconds=1))
 
 
         tout = yield gen.Task(

@@ -40,4 +40,7 @@ class SQSTest(AsyncTestCase):
             gen.Task(sender.send, 'test3'),
         ]
 
-        self.fail('sdf')
+        self.assertEqual(a.resp_code, 200)
+        self.assertEqual(b.resp_code, 200)
+        self.assertEqual(c.resp_code, 200)
+
