@@ -73,15 +73,17 @@ class EasyV4SignTest(unittest.TestCase):
         v4sign = EasyV4Sign(
             ACCESS_KEY, 
             SECRET_KEY,
-            'host',
+            'iam.amazonaws.com',
             endpoint='us-east-1',
         )
 
         timestamp = '20110909T233600Z'
 
-        headers = {'Date':'Mon, 09 Sep 2011 23:36:00 GMT'}
-        x_method, x_url, x_headers, x_body = v4sign.sign_get(
-            'http://host.foo.com', headers, params={}, timestamp=timestamp)
+        headers = {}
+        data = {'Version': '2010-05-08',
+        'ACtion': 'ListUser'}
+        x_method, x_url, x_headers, x_body = v4sign.sign_post(
+            'http://host.foo.com', headers, data=data, timestamp=timestamp)
         
         self.assertNotEqual(x_headers, headers)
 
