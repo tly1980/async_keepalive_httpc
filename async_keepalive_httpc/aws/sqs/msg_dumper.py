@@ -4,7 +4,8 @@ import csv
 import logging
 import yaml
 import functools
-
+import traceback
+import urllib
 import tornado
 import tornado.ioloop
 from tornado import gen
@@ -28,7 +29,8 @@ def real_path_to_cwd(path):
 
 def load_config(config_path):
     default_config = {
-        'verbosity': 'INFO'
+        'verbosity': 'INFO',
+        'ap-southeast-2': 'ap-southeast-2'
     }
 
     config = dict(default_config)
@@ -41,13 +43,15 @@ def load_config(config_path):
     return config
 
 
-def extract_xml(request, callback=None):
+def extract_xml(request, messages=[], callback=None):
     the_resp = None
     if request.resp_code != 200:
         sqs_recv_logger.warn("resp body: \n%s" % request.resp_data)
         sqs_recv_logger.warn("orig req: \n%s" % request.req())
     else:
         the_resp = xmltodict.parse(request.resp_data)
+        sqs_recv_logger.info("{} messages removed".format(len(messages)))
+
 
     if callback:
         callback(request, the_resp)
@@ -60,17 +64,21 @@ class CsvWriter(object):
             quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
     def write_row(self, message_id, timestamp, message_content):
-        self.writer.write([message_id, timestamp, message_content])
+        self.writer.writerow([message_id, timestamp, message_content])
         self.the_file.flush()
 
 
 class App(object):
+    check_feq_sec = 0.1
+
     def __init__(self, *args, **kwargs):
         self.access_key = kwargs.get('access_key')
         self.secret_key = kwargs.get('secret_key')
+        self.endpoint = kwargs.get('endpoint')
         self.io_loop = kwargs.get('io_loop', 
             tornado.ioloop.IOLoop.instance())
         self.q_url = kwargs.get('q_url')
+        self.q_url_info = UrlInfo(self.q_url)
         file_path = real_path_to_cwd(kwargs.get('dump_file', './message.csv'))
         the_file = open(file_path, 'ab')
         self.csv_writer = CsvWriter(the_file=the_file)
@@ -94,37 +102,53 @@ class App(object):
             self.secret_key,
             self.q_url)
 
+        self.logger = logging.getLogger(App.__class__.__name__)
+
+    @gen.coroutine
+    def check(self):
+        req = yield gen.Task(self.receiver.receive)
+        messages = req.sqs_messages
+
+        for m in messages:
+            self.csv_writer.write_row(m['MessageId'], m['Body'], m['ReceiptHandle'])
+
+        if self.delete_after_dump and messages:
+            self.logger.info('got {} messages, about to remove them from q'.format(len(messages)))
+            yield gen.Task(self.remove_messages, messages)
+
+        self.io_loop.add_callback(self.check)
 
     def run(self):
-        while(True):
-            req, messages = yield gen.Task(self.receiver.receive)
+        self.io_loop.add_callback(self.check)
+        self.io_loop.start()
 
-            for m in messages:
-                self.csv_writer.write_row(m['message_id'], m['timestamp'], m['message_content'])
-
-            if self.delete_after_dump:
-                yield gen.Task(self.remove_messages, messages)
 
     def remove_messages(self, messages, callback=None):
-        params = {
+        
+        data = {
             'Action': 'DeleteMessageBatch',
             'Version': '2011-10-01',
         }
 
         i = 1
         for m in messages:
-            params['DeleteMessageBatchRequestEntry.{}.id'.format(i)] = m['id']
-            params['DeleteMessageBatchRequestEntry.{}.ReceiptHandle'.format(i)] = m['ReceiptHandle']
+            data['DeleteMessageBatchRequestEntry.{}.Id'.format(i)] = urllib.quote_plus(m['MessageId'])
+            data['DeleteMessageBatchRequestEntry.{}.ReceiptHandle'.format(i)] = urllib.quote_plus(m['ReceiptHandle'])
             i += 1
 
-        x_method, x_url, x_headers, x_body = self.v4sign.sign_get(
-            self.q_url, self._header_tpl, params=params)
+        try:
+            x_method, x_url, x_headers, x_body = self.v4sign.sign_post(
+                self.q_url, {}, data=data)
 
-        cb = functools.partial(extract_xml, callback=callback)
+            cb = functools.partial(extract_xml, messages=messages, callback=callback)
+        except Exception, e:
+            self.logger.exception(e)
 
-        r = Request(UrlInfo(x_url), method="GET", 
+
+        r = Request(UrlInfo(x_url), method="POST", 
                 callback=cb, extra_headers=x_headers, body=x_body)
-        self.sq_mgr.add(r)
+        self.sq_mgr_rm_msg.add(r)
+
 
 
 if __name__=='__main__':
@@ -135,6 +159,7 @@ if __name__=='__main__':
     config_path = real_path_to_cwd(args.config)
     config = load_config(config_path)
     config_msg_dumper = config['msg_dumper']
-    app = App(**config)
+    app = App(**config_msg_dumper)
     app.run()
+
 

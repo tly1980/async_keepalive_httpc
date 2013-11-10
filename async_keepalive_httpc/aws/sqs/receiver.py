@@ -14,16 +14,21 @@ sqs_recv_logger = logging.getLogger("sqs_recv")
 
 
 def extract_msg(request, callback=None):
-    messages = None
-
+    resp = None
+    request.sqs_messages = []
     if request.resp_code != 200:
         sqs_recv_logger.warn("resp body: \n%s" % request.resp_data)
         sqs_recv_logger.warn("orig req: \n%s" % request.req())
     else:
-        messages = xmltodict.parse(request.resp_data)
+        resp = xmltodict.parse(request.resp_data)
+        try:
+            request.sqs_messages = resp['ReceiveMessageResponse']['ReceiveMessageResult']['Message']
+        except:
+            sqs_recv_logger.info('receive no message')
+            request.sqs_messages = []
 
     if callback:
-        callback(request, messages)
+        callback(request)
 
 
 class Receiver(object):
@@ -60,7 +65,6 @@ class Receiver(object):
 
 
     def receive(self, callback=None):
-
         params = {
             'Action': 'ReceiveMessage', 
             'WaitTimeSeconds': self.max_wait_sec,
@@ -69,11 +73,11 @@ class Receiver(object):
         }
 
         x_method, x_url, x_headers, x_body = self.v4sign.sign_get(
-            self.q_url, self._header_tpl, params=params)
+            self.q_url, {}, params=params)
 
         cb = functools.partial(extract_msg, callback=callback)
 
-
         r = Request(UrlInfo(x_url), method="GET", 
                 callback=cb, extra_headers=x_headers, body=x_body)
+
         self.sq_mgr.add(r)

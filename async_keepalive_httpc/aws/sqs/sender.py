@@ -32,6 +32,7 @@ def verify_and_callback(request, expact_md5=None, callback=None):
         sqs_result = xmltodict.parse(request.resp_data)
         msg_id = sqs_result['SendMessageResponse']['SendMessageResult']['MessageId']
         msg_md5 = sqs_result['SendMessageResponse']['SendMessageResult']['MD5OfMessageBody']
+
         if expact_md5 != msg_md5:
             sqs_v_logger.warn("md5 is not matched. Expect: {}, Received: {}".format(expact_md5, msg_md5))
         else:

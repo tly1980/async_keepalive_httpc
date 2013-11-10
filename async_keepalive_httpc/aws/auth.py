@@ -17,6 +17,12 @@ class DummyRequest(object):
         self.params = params
         self.body = body
 
+        if params:
+            l = ['='.join([k, str(params[k])]) for k in sorted(params.keys())]
+            qry_string = '&'.join(l)
+
+            self.url = '{}?{}'.format(self.url, qry_string)
+
 
 class EasyV4Sign(object):
 
@@ -38,11 +44,11 @@ class EasyV4Sign(object):
     def sign_post(self, url, headers, data={}, timestamp=None):
         new_headers = dict(headers)
 
-        l = ['='.join([k, data[k]]) for k in sorted(data.keys())]
+        l = ['='.join([k, str(data[k])]) for k in sorted(data.keys())]
         body = '&'.join(l)
         new_headers['Content-type'] = 'application/x-www-form-urlencoded; charset=utf-8'
 
-        r = DummyRequest('POST', url, headers=new_headers, body=body)
+        r = DummyRequest('POST', url, headers=new_headers, body=body, params={})
 
         if timestamp:
             self.sigV4auth.timestamp = timestamp
@@ -56,7 +62,7 @@ class EasyV4Sign(object):
     def sign_get(self, url, headers, params={}, timestamp=None):
         new_headers = dict(headers)
 
-        r = DummyRequest('GET', url, headers=new_headers)
+        r = DummyRequest('GET', url, headers=new_headers, params=params)
 
         if timestamp:
             self.sigV4auth.timestamp = timestamp
