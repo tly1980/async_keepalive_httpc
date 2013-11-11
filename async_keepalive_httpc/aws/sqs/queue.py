@@ -4,6 +4,9 @@ import md5
 import functools
 
 import xmltodict
+import shortuuid
+
+import tornado.httpclient
 
 from async_keepalive_httpc.keepalive_client import SimpleKeepAliveHTTPClient
 from async_keepalive_httpc.aws.auth import EasyV4Sign
@@ -38,7 +41,8 @@ def verify_send(response, expact_md5=None, callback=None):
         callback(response)
 
 
-def verify_send_batch(response, expact_md5s=None, callback=None):
+def verify_send_batch(response,  request=None, expact_md5s=None, callback=None):
+    assert(request==response.request)
     sqs_v_logger.info("resp [%s - %s]: \n" % 
         (response.code, response.reason))
     if response.code != 200:
@@ -49,7 +53,7 @@ def verify_send_batch(response, expact_md5s=None, callback=None):
         for r in sqs_result['SendMessageBatchResponse']['SendMessageBatchResult']['SendMessageBatchResultEntry']:
             msg_id = r['Id']
             msg_md5 = r['MD5OfMessageBody']
-            expact_md5 = expact_md5s[msg_id]
+            expact_md5 = expact_md5s.get(msg_id, None)
 
             if expact_md5 != msg_md5:
                 sqs_v_logger.warn("md5 is not matched. Expect: {}, Received: {}".format(expact_md5, msg_md5))
@@ -98,7 +102,7 @@ class SQSQueue(object):
         cb = functools.partial(verify_send, expact_md5=md5_unquoted, callback=callback)
         return self.client.fetch(x_url, callback=cb, method='POST', headers=x_headers, body=x_body)
 
-    def send_batch(self, msgs=[], callback=None, headers={}):
+    def send_batch(self, messages=[], callback=None, headers={}):
 
         data = {
             'Action': 'SendMessageBatch', 
@@ -107,12 +111,12 @@ class SQSQueue(object):
 
         expact_md5s = {}
 
-        for i, m in enumerate(msgs, 1):
+        for i, m in enumerate(messages, 1):
             n_id = 'SendMessageBatchRequestEntry.{}.Id'.format(i)
             n_body = 'SendMessageBatchRequestEntry.{}.MessageBody'.format(i)
             m_body = urllib.quote_plus(m)
 
-            data[n_id] = 'msg_{}'.format(i)
+            data[n_id] = shortuuid.uuid()
             data[n_body] = m_body
             expact_md5s[data[n_id]] = md5_hexdigest(m)
 
@@ -121,8 +125,11 @@ class SQSQueue(object):
 
         self.logger.debug('send_batch authinfo is {}'.format(x_headers['Authorization']))
 
-        cb = functools.partial(verify_send_batch, expact_md5s=expact_md5s, callback=callback)
-        return self.client.fetch(x_url, callback=cb, method='POST', headers=x_headers, body=x_body)
+        r = tornado.httpclient.HTTPRequest(x_url, method='POST', headers=x_headers, body=x_body)
+
+        cb = functools.partial(verify_send_batch, request=r, expact_md5s=expact_md5s, callback=callback)
+
+        return self.client.fetch(r, callback=cb, method='POST')
 
 
     def get(self, message_number=1):

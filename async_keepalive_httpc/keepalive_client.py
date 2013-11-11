@@ -415,11 +415,12 @@ class KeepAliveHTTPConnection(object):
             release_callback()
 
     def _run_callback(self, response):
-        self._release()
         if self.final_callback is not None:
             final_callback = self.final_callback
             self.final_callback = None
             self.io_loop.add_callback(final_callback, response)
+
+        self._release()
 
     def _handle_exception(self, typ, value, tb):
         if self.final_callback:
@@ -429,7 +430,8 @@ class KeepAliveHTTPConnection(object):
                                             ))
 
             if hasattr(self, "stream"):
-                self.stream.close()
+                if self.stream:
+                    self.stream.close()
             return True
         else:
             # If our callback has already been called, we are probably
