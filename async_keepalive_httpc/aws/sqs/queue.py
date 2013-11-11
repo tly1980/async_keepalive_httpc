@@ -69,7 +69,7 @@ class SQSQueue(object):
 
     def __init__(self, io_loop,
         access_key, secret_key, q_url, 
-        endpoint='ap-southeast-2'):
+        endpoint='ap-southeast-2', verify=True):
         self.access_key = access_key
         self.secret_key = secret_key
         self.q_url = q_url
@@ -82,10 +82,10 @@ class SQSQueue(object):
         self.logger = logging.getLogger(SQSQueue.__name__)
         self.io_loop = io_loop
         self.client = SimpleKeepAliveHTTPClient(self.io_loop)
+        self.verify = verify
 
 
     def send(self, msg, callback=None, headers={}):
-
         msg_body = urllib.quote_plus(msg)
 
         data = {
@@ -96,10 +96,13 @@ class SQSQueue(object):
 
         x_method, x_url, x_headers, x_body = self.v4sign.sign_post(
             self.q_url, headers, data=data)
-        md5_unquoted= md5_hexdigest(msg)
-        self.logger.debug('authinfo  for {} is {}'.format(msg_body, x_headers['Authorization']))
+        if self.verify:
+            md5_unquoted= md5_hexdigest(msg)
+            self.logger.debug('authinfo  for {} is {}'.format(msg_body, x_headers['Authorization']))
 
-        cb = functools.partial(verify_send, expact_md5=md5_unquoted, callback=callback)
+            cb = functools.partial(verify_send, expact_md5=md5_unquoted, callback=callback)
+        else:
+            cb = callback
         return self.client.fetch(x_url, callback=cb, method='POST', headers=x_headers, body=x_body)
 
     def send_batch(self, messages=[], callback=None, headers={}):
@@ -109,25 +112,29 @@ class SQSQueue(object):
             'Version': '2012-11-05',
         }
 
-        expact_md5s = {}
-
-        for i, m in enumerate(messages, 1):
-            n_id = 'SendMessageBatchRequestEntry.{}.Id'.format(i)
-            n_body = 'SendMessageBatchRequestEntry.{}.MessageBody'.format(i)
-            m_body = urllib.quote_plus(m)
-
-            data[n_id] = shortuuid.uuid()
-            data[n_body] = m_body
-            expact_md5s[data[n_id]] = md5_hexdigest(m)
-
         x_method, x_url, x_headers, x_body = self.v4sign.sign_post(
             self.q_url, headers, data=data)
 
-        self.logger.debug('send_batch authinfo is {}'.format(x_headers['Authorization']))
-
         r = tornado.httpclient.HTTPRequest(x_url, method='POST', headers=x_headers, body=x_body)
 
-        cb = functools.partial(verify_send_batch, request=r, expact_md5s=expact_md5s, callback=callback)
+
+        if self.verify:
+            expact_md5s = {}
+
+            for i, m in enumerate(messages, 1):
+                n_id = 'SendMessageBatchRequestEntry.{}.Id'.format(i)
+                n_body = 'SendMessageBatchRequestEntry.{}.MessageBody'.format(i)
+                m_body = urllib.quote_plus(m)
+
+                data[n_id] = shortuuid.uuid()
+                data[n_body] = m_body
+                expact_md5s[data[n_id]] = md5_hexdigest(m)
+
+            cb = functools.partial(verify_send_batch, request=r, expact_md5s=expact_md5s, callback=callback)
+        else:
+            cb = callback
+
+        self.logger.debug('send_batch authinfo is {}'.format(x_headers['Authorization']))
 
         return self.client.fetch(r, callback=cb, method='POST')
 

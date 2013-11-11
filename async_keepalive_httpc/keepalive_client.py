@@ -23,6 +23,8 @@ import socket
 import ssl
 import sys
 
+import logging
+
 try:
     from io import BytesIO  # python 3
 except ImportError:
@@ -90,6 +92,7 @@ class SimpleKeepAliveHTTPClient(object):
 
         self.idle_timeout = idle_timeout
         self._idle_timeout_callback = None
+        self.logger = logging.getLogger(self.__class__.__name__)
 
 
     def fetch(self, request, callback=None, **kwargs):
@@ -158,12 +161,18 @@ class SimpleKeepAliveHTTPClient(object):
                 release_callback = functools.partial(self._release_fetch, key)
                 self._handle_request(request, release_callback, callback)
 
+
             if len(self.queue) == 0 and len(self.active) == 0:
                 now = self.io_loop.time()
                 self._idle_timeout_callback = self.io_loop.add_timeout(
                     now + self.idle_timeout,
                     stack_context.wrap(self._on_idle_timeout)
                 )
+            else:
+                pass
+                if self._idle_timeout_callback:
+                    self.io_loop.remove_timeout(self._idle_timeout_callback)
+                    self._idle_timeout_callback = None
 
     def _handle_request(self, request, release_callback, final_callback):
         self.connection.add_request(request, release_callback, final_callback)
@@ -173,6 +182,10 @@ class SimpleKeepAliveHTTPClient(object):
         self._process_queue()
 
     def _on_idle_timeout(self):
+        msg = 'idle timeout'
+        if hasattr(self, 'res_id'):
+            msg += ' for {}'.format(self.res_id)
+        self.logger.info(msg)
         self.connection.disconnect()
 
     def __len__(self):
@@ -200,15 +213,17 @@ class KeepAliveHTTPConnection(object):
         self.is_support_keepalive = True
         self.stream = None
         self.connect_times = 0
+        self.logger = logging.getLogger(self.__class__.__name__)
 
     def add_request(self, request, release_callback, final_callback):
         self.request = request
         self.release_callback = release_callback
         self.final_callback = final_callback
-
+        self._remove_timeout()
         self.resolve()
 
     def disconnect(self):
+        self.logger.warn('about to disconnect')
         self.stream.close()
 
     def is_connected(self):
@@ -467,7 +482,10 @@ class KeepAliveHTTPConnection(object):
         connection_param = self.headers.get('Connection', None)
 
         if connection_param and connection_param.lower() != 'keep-alive':
+            self.logger.info('no keep-alive')
             self.is_support_keepalive = False
+        else:
+            self.logger.info('yes keep-alive')
 
         if "Content-Length" in self.headers:
             if "," in self.headers["Content-Length"]:
