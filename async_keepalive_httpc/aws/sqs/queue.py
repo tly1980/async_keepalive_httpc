@@ -38,6 +38,28 @@ def verify_send(response, expact_md5=None, callback=None):
         callback(response)
 
 
+def verify_send_batch(response, expact_md5s=None, callback=None):
+    sqs_v_logger.info("resp [%s - %s]: \n" % 
+        (response.code, response.reason))
+    if response.code != 200:
+        sqs_v_logger.warn("resp [%s - %s]: \n %s" % (
+            response.code, response.reason, response.body))
+    else:
+        sqs_result = xmltodict.parse(response.body)
+        for r in sqs_result['SendMessageBatchResponse']['SendMessageBatchResult']['SendMessageBatchResultEntry']:
+            msg_id = r['Id']
+            msg_md5 = r['MD5OfMessageBody']
+            expact_md5 = expact_md5s[msg_id]
+
+            if expact_md5 != msg_md5:
+                sqs_v_logger.warn("md5 is not matched. Expect: {}, Received: {}".format(expact_md5, msg_md5))
+            else:
+                sqs_v_logger.info("msg send sucessfully with id: %s" % msg_id)
+
+    if callback:
+        callback(response)
+
+
 class SQSQueue(object):
     _version = "2012-11-05"
 
@@ -76,6 +98,36 @@ class SQSQueue(object):
         cb = functools.partial(verify_send, expact_md5=md5_unquoted, callback=callback)
         return self.client.fetch(x_url, callback=cb, method='POST', headers=x_headers, body=x_body)
 
+    def send_batch(self, msgs=[], callback=None, headers={}):
+
+        data = {
+            'Action': 'SendMessageBatch', 
+            'Version': '2012-11-05',
+        }
+
+        expact_md5s = {}
+
+        for i, m in enumerate(msgs, 1):
+            n_id = 'SendMessageBatchRequestEntry.{}.Id'.format(i)
+            n_body = 'SendMessageBatchRequestEntry.{}.MessageBody'.format(i)
+            m_body = urllib.quote_plus(m)
+
+            data[n_id] = 'msg_{}'.format(i)
+            data[n_body] = m_body
+            expact_md5s[data[n_id]] = md5_hexdigest(m)
+
+        x_method, x_url, x_headers, x_body = self.v4sign.sign_post(
+            self.q_url, headers, data=data)
+
+        self.logger.debug('send_batch authinfo is {}'.format(x_headers['Authorization']))
+
+        cb = functools.partial(verify_send_batch, expact_md5s=expact_md5s, callback=callback)
+        return self.client.fetch(x_url, callback=cb, method='POST', headers=x_headers, body=x_body)
+
+
     def get(self, message_number=1):
         pass
+
+    def __len__(self):
+        return len(self.client)
 

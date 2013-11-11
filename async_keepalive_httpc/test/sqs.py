@@ -38,3 +38,17 @@ class SQSTest(AsyncTestCase):
 
         # make sure it is 'keep-alive'
         self.assertEqual(q.client.connection.connect_times, 1)
+
+    @gen_test(timeout=100)
+    def test_send_batch(self):
+        q = SQSQueue(
+            self.io_loop,
+            self.ACCESS_KEY,
+            self.SECRET_KEY,
+            self.Q_URL)
+
+        r1 = yield q.send_batch(msgs=['1abc', '2def', '3ghi'])
+        self.assertEqual(r1.code, 200)
+
+        # make sure it is 'keep-alive'
+        self.assertEqual(q.client.connection.connect_times, 1)

@@ -29,6 +29,7 @@ class ResourcePool(object):
     def _increase(self):
         if len(self._pool) < self.max_count:
             ret = self.create_func()
+            ret.res_id = len(self._pool)
             self._pool.append(ret)
             return ret
         return None
