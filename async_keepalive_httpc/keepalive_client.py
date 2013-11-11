@@ -6,7 +6,7 @@ from tornado.httpclient import HTTPResponse, HTTPError, _RequestProxy, HTTPReque
 from tornado import httputil
 from tornado.iostream import IOStream, SSLIOStream
 from tornado.netutil import Resolver, OverrideResolver
-from tornado.log import gen_log
+
 from tornado import stack_context
 from tornado.util import GzipDecompressor
 from tornado.concurrent import TracebackFuture
@@ -174,6 +174,9 @@ class SimpleKeepAliveHTTPClient(object):
 
     def _on_idle_timeout(self):
         self.connection.disconnect()
+
+    def __len__(self):
+        return len(self.queue) + len(self.active)
 
 
 class KeepAliveHTTPConnection(object):

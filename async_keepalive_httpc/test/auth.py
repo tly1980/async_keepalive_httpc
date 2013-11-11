@@ -22,28 +22,6 @@ class EasyV4SignTest(unittest.TestCase):
             self.ACCESS_KEY = d['ACCESS_KEY']
             self.SECRET_KEY = d['SECRET_KEY']
 
-    # def test_sign_iam(self):
-    #     v4sign = EasyV4Sign(
-    #         self.ACCESS_KEY, self.SECRET_KEY,
-    #         'iam',
-    #         endpoint='us-east-1'
-    #     )
-
-    #     headers = { 
-    #         'Content-type':'application/x-www-form-urlencoded; charset=utf-8'
-    #     }
-
-    #     params = {
-    #         'Action': 'ListUsers',
-    #         'Version': '2010-05-08'
-    #     }
-
-    #     x_method, x_url, x_headers, x_body = ev4sign.sign(
-    #         url, headers, params=params, 
-    #         method='POST', timestamp=self.TIMESTAMP
-    #     )
-
-
     def test_sign_get(self):
         ACCESS_KEY = 'AKIDEXAMPLE'
         SECRET_KEY = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY"

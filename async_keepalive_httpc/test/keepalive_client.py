@@ -50,11 +50,14 @@ class SimpleKeepAliveHTTPClientTestCase(AsyncTestCase):
         self.create_server()
         ska_client = SimpleKeepAliveHTTPClient(self.io_loop)
 
+        self.assertEqual(0, len(ska_client))
+
         ska_client.fetch('http://localhost:{}/a.txt'.format(self.port))
         ska_client.fetch('http://localhost:{}/b.txt'.format(self.port))
         ska_client.fetch('http://localhost:{}/c.txt'.format(self.port))
 
         self.assertEqual(2, len(ska_client.queue))
+        self.assertEqual(3, len(ska_client))
 
         d = yield ska_client.fetch('http://localhost:{}/c.txt'.format(self.port))
 
@@ -64,7 +67,7 @@ class SimpleKeepAliveHTTPClientTestCase(AsyncTestCase):
 
 
     @gen_test(timeout=10)
-    def test_request_timeout(self):
+    def test_idle_timeout(self):
         self.create_server()
         ska_client = SimpleKeepAliveHTTPClient(self.io_loop, idle_timeout=0.1)
 
@@ -95,76 +98,3 @@ class SimpleKeepAliveHTTPClientTestCase(AsyncTestCase):
         
         self.assertEqual(ska_client.connection.stream.closed(), True)
 
-
-    # @gen_test(timeout=5)
-    # def test_idle_timout(self):
-    #     '''
-    #     The sq_mgr should disconnect automatically after being idle
-    #     for a specific time
-    #     '''
-
-    #     self.create_server()
-    #     self.sq_mgr = QueueManager(self.io_loop, 
-    #         'localhost', self.port, False,
-    #         idle_timout=datetime.timedelta(seconds=1),
-    #         check_feq = datetime.timedelta(seconds=0.1))
-
-    #     a, b, c = yield [
-    #       gen.Task(self.get, 'http://localhost:{}/a.txt'.format(self.port)),
-    #       gen.Task(self.get, 'http://localhost:{}/b.txt'.format(self.port)),
-    #       gen.Task(self.get, 'http://localhost:{}/c.txt'.format(self.port))
-    #     ]
-
-    #     self.assertIn('a.txt', a.resp_data)
-    #     self.assertIn('b.txt', b.resp_data)
-    #     self.assertIn('c.txt', c.resp_data)
-
-    #     self.assertIsNotNone(self.sq_mgr.stream)
-    #     self.assertFalse(self.sq_mgr.stream.closed())
-
-    #     # 
-    #     yield gen.Task(self.io_loop.add_callback)
-
-    #     self.assertEqual(
-    #         self.sq_mgr.current_request, None)
-
-    #     self.assertEqual(self.sq_mgr.connect_count, 1)
-
-    #     self.assertEqual(self.sq_mgr.stream.closed(),
-    #         False)
-
-    #     # let the event loop to have cpu controll here, 
-    #     # so they it can do the disconnect
-
-    #     yield gen.Task(
-    #         self.io_loop.add_timeout,
-    #         datetime.timedelta(seconds=1.5))
-
-    #     self.assertEqual(self.sq_mgr.stream, None)
-    #     #self.fail('just to check the log')
-
-    # @gen_test()
-    # def test_update_request(self):
-    #     self.create_server()
-    #     self.sq_mgr = QueueManager(self.io_loop, 
-    #         'localhost', self.port, False,
-    #         idle_timout=datetime.timedelta(seconds=1),
-    #         check_feq = datetime.timedelta(seconds=0.1))
-
-    #     yield gen.Task(self.get, 'http://localhost:{}/a.txt'.format(self.port))
-
-    #     self.assertEqual(
-    #         self.sq_mgr.last_request,  None)
-
-    #     self.assertEqual(
-    #         self.sq_mgr.current_request.uri, '/a.txt')
-
-    #     yield gen.Task(self.get, 'http://localhost:{}/b.txt'.format(self.port))
-
-    #     self.assertEqual(
-    #         self.sq_mgr.last_request.uri, '/a.txt')
-
-    #     self.assertEqual(
-    #         self.sq_mgr.current_request.uri, '/b.txt')
-
-        #self.fail('just to check the log')
