@@ -112,11 +112,6 @@ class SQSQueue(object):
             'Version': '2012-11-05',
         }
 
-        x_method, x_url, x_headers, x_body = self.v4sign.sign_post(
-            self.q_url, headers, data=data)
-
-        r = tornado.httpclient.HTTPRequest(x_url, method='POST', headers=x_headers, body=x_body)
-
 
         if self.verify:
             expact_md5s = {}
@@ -130,8 +125,24 @@ class SQSQueue(object):
                 data[n_body] = m_body
                 expact_md5s[data[n_id]] = md5_hexdigest(m)
 
+            x_method, x_url, x_headers, x_body = self.v4sign.sign_post(
+                self.q_url, headers, data=data)
+
+            r = tornado.httpclient.HTTPRequest(x_url, method='POST', headers=x_headers, body=x_body)
             cb = functools.partial(verify_send_batch, request=r, expact_md5s=expact_md5s, callback=callback)
         else:
+            for i, m in enumerate(messages, 1):
+                n_id = 'SendMessageBatchRequestEntry.{}.Id'.format(i)
+                n_body = 'SendMessageBatchRequestEntry.{}.MessageBody'.format(i)
+                m_body = urllib.quote_plus(m)
+
+                data[n_id] = shortuuid.uuid()
+                data[n_body] = m_body
+
+            x_method, x_url, x_headers, x_body = self.v4sign.sign_post(
+                self.q_url, headers, data=data)
+
+            r = tornado.httpclient.HTTPRequest(x_url, method='POST', headers=x_headers, body=x_body)
             cb = callback
 
         self.logger.debug('send_batch authinfo is {}'.format(x_headers['Authorization']))
