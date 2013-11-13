@@ -1,5 +1,9 @@
 import urlparse
 
+try:
+    import ujson as json
+except:
+    import json
 
 class UrlInfo(object):
     def __init__(self, url):

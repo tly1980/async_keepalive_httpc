@@ -168,13 +168,18 @@ class SimpleKeepAliveHTTPClient(object):
                     now + self.idle_timeout,
                     stack_context.wrap(self._on_idle_timeout)
                 )
+
             else:
-                pass
+
                 if self._idle_timeout_callback:
                     self.io_loop.remove_timeout(self._idle_timeout_callback)
                     self._idle_timeout_callback = None
 
     def _handle_request(self, request, release_callback, final_callback):
+        if self.connection.final_callback and not self.connection.is_support_keepalive:
+            self.logger.info('old connection does not support KA. creating new connection')
+            self.connection = KeepAliveHTTPConnection(self.io_loop, self, self.max_buffer_size, self.resolver)
+
         self.connection.add_request(request, release_callback, final_callback)
 
     def _release_fetch(self, key):
@@ -232,7 +237,7 @@ class KeepAliveHTTPConnection(object):
 
         if self.stream.closed():
             return False
-        
+
         return True
 
     def resolve(self):
@@ -268,6 +273,7 @@ class KeepAliveHTTPConnection(object):
             self.update_timeout()
 
         if self.is_connected():
+            self.logger.info('is connecting ....')
             self._on_connect()
         else:
             self.resolver.resolve(host, port, af, callback=self._on_resolve)
@@ -481,11 +487,11 @@ class KeepAliveHTTPConnection(object):
 
         connection_param = self.headers.get('Connection', None)
 
-        if connection_param and connection_param.lower() != 'keep-alive':
+        if connection_param and connection_param.lower() == 'keep-alive':
+            self.logger.info('yes keep-alive')
+        else:
             self.logger.info('no keep-alive')
             self.is_support_keepalive = False
-        else:
-            self.logger.info('yes keep-alive')
 
         if "Content-Length" in self.headers:
             if "," in self.headers["Content-Length"]:

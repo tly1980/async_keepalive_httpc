@@ -7,7 +7,6 @@ from tornado import gen
 from async_keepalive_httpc.keepalive_client import SimpleKeepAliveHTTPClient
 
 
-
 class SimpleKeepAliveHTTPClientTestCase(AsyncTestCase):
     '''
     This would be treated as a simple template
@@ -62,6 +61,8 @@ class SimpleKeepAliveHTTPClientTestCase(AsyncTestCase):
         d = yield ska_client.fetch('http://localhost:{}/c.txt'.format(self.port))
 
         self.assertIn('c.txt', d.body)
+
+        self.assertIsNone(ska_client.connection.final_callback)
 
         self.assertEqual(ska_client.connection.connect_times, 1)
 

@@ -8,8 +8,7 @@ import shortuuid
 
 import tornado.httpclient
 
-from async_keepalive_httpc.keepalive_client import SimpleKeepAliveHTTPClient
-from async_keepalive_httpc.aws.auth import EasyV4Sign
+from async_keepalive_httpc.aws.common import AWSClient
 
 sqs_v_logger = logging.getLogger("sqs_verification")
 
@@ -64,25 +63,19 @@ def verify_send_batch(response,  request=None, expact_md5s=None, callback=None):
         callback(response)
 
 
-class SQSQueue(object):
+class SQSQueue(AWSClient):
+    _service = 'sqs'
     _version = "2012-11-05"
 
     def __init__(self, io_loop,
         access_key, secret_key, q_url, 
         endpoint='ap-southeast-2', verify=True):
-        self.access_key = access_key
-        self.secret_key = secret_key
-        self.q_url = q_url
-        self.endpoint = endpoint
-        self.v4sign = EasyV4Sign(
-            self.access_key, self.secret_key,
-            'sqs',
-            endpoint=self.endpoint
-        )
-        self.logger = logging.getLogger(SQSQueue.__name__)
-        self.io_loop = io_loop
-        self.client = SimpleKeepAliveHTTPClient(self.io_loop)
+
+        super(SQSQueue, self).__init__(
+            io_loop, access_key, secret_key, endpoint )
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.verify = verify
+        self.q_url = q_url
 
 
     def send(self, msg, callback=None, headers={}):
@@ -91,7 +84,7 @@ class SQSQueue(object):
         data = {
             'Action': 'SendMessage', 
             'MessageBody': msg_body,
-            'Version': '2012-11-05',
+            'Version': self._version,
         }
 
         x_method, x_url, x_headers, x_body = self.v4sign.sign_post(
@@ -109,9 +102,8 @@ class SQSQueue(object):
 
         data = {
             'Action': 'SendMessageBatch', 
-            'Version': '2012-11-05',
+            'Version': self._version,
         }
-
 
         if self.verify:
             expact_md5s = {}

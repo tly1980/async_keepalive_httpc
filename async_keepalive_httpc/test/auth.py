@@ -56,8 +56,8 @@ class EasyV4SignTest(unittest.TestCase):
         )
 
         timestamp = '20110909T233600Z'
-
-        headers = {'Content-type': 'application/x-www-form-urlencoded; charset=utf-8'}
+        headers = {}
+        #headers = {'Content-type': 'application/x-www-form-urlencoded; charset=utf-8'}
         data = {
             'Version': '2010-05-08',
             'Action': 'ListUsers'

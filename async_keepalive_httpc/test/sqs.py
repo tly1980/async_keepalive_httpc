@@ -4,10 +4,10 @@ from tornado.testing import AsyncTestCase, gen_test
 from async_keepalive_httpc.aws.sqs import SQSQueue
 
 
-class SQSTest(AsyncTestCase):
+class SQSTestCase(AsyncTestCase):
 
     def setUp(self):
-        super(SQSTest, self).setUp()
+        super(SQSTestCase, self).setUp()
         path = os.path.abspath(
             os.path.join (
                 os.path.dirname(__file__), 'aws_keypair.yaml' 
@@ -47,7 +47,7 @@ class SQSTest(AsyncTestCase):
             self.SECRET_KEY,
             self.Q_URL)
 
-        r1 = yield q.send_batch(msgs=['1abc', '2def', '3ghi'])
+        r1 = yield q.send_batch(messages=['1abc', '2def', '3ghi'])
         self.assertEqual(r1.code, 200)
 
         # make sure it is 'keep-alive'
