@@ -4,6 +4,9 @@ import json
 import os
 
 
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
 def load_version():
     v_path = os.path.abspath(
         os.path.join(os.path.dirname(__file__), 'async_keepalive_httpc', 'VERSION.json')
@@ -13,9 +16,10 @@ def load_version():
         v = json.load(f)
         return v['main'].split('/')[1]
 
-setup(name='Async KeepAlive HTTP client',
+setup(name='async_keepalive_httpc',
       version=load_version(),
       description='An async http client with keep-alive capabilities',
+      long_description=read('README.rst'),
       license='BSD',
       author='Tom Tang',
       author_email='tly1980@gmail.com',
