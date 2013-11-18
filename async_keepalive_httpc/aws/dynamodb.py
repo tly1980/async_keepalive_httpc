@@ -47,10 +47,18 @@ class DynamoAPI(object):
         Check for errors and decode the json response (in the tornado response body), then pass on to orig callback.
         This method also contains some of the logic to handle reacquiring session tokens.
         '''
-        try:
-            json_response = json.loads(response.body, object_hook=object_hook)
-        except TypeError:
-            json_response = None
+
+        if object_hook:
+            try:
+                json_response = json.loads(response.body, object_hook=object_hook)
+            except TypeError:
+                json_response = None
+        else:
+            try:
+                json_response = json.loads(response.body)
+            except TypeError:
+                json_response = None
+
 
         if json_response and response.error:
             return callback(json_response, error=response.error, response=response)
@@ -220,12 +228,12 @@ class DynamoDB(DynamoAPI, AWSClient):
     _service = 'DynamoDB'
     _version = "20120810"
 
-
-    def __init__(self,  io_loop, access_key, secret_key,  endpoint='ap-southeast-2'):
+    def __init__(self,  io_loop, access_key, secret_key, endpoint='ap-southeast-2', is_ssl=False):
         super(DynamoDB, self).__init__(
             io_loop, access_key, secret_key, endpoint)
         self.logger = logging.getLogger(self.__class__.__name__)
-
-    @property
-    def url(self):
-        return 'http://dynamodb.{}.amazonaws.com/'.format(self.endpoint)
+        self.is_ssl = is_ssl
+        if self.is_ssl:
+            self.url = 'https://dynamodb.{}.amazonaws.com/'.format(self.endpoint)
+        else:
+            self.url = 'http://dynamodb.{}.amazonaws.com/'.format(self.endpoint)

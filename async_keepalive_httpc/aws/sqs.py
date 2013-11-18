@@ -49,15 +49,29 @@ def verify_send_batch(response,  request=None, expact_md5s=None, callback=None):
             response.code, response.reason, response.body))
     else:
         sqs_result = xmltodict.parse(response.body)
-        for r in sqs_result['SendMessageBatchResponse']['SendMessageBatchResult']['SendMessageBatchResultEntry']:
-            msg_id = r['Id']
-            msg_md5 = r['MD5OfMessageBody']
-            expact_md5 = expact_md5s.get(msg_id, None)
 
+        if type(
+            sqs_result['SendMessageBatchResponse']['SendMessageBatchResult']['SendMessageBatchResultEntry']) == list:
+            for entry in sqs_result['SendMessageBatchResponse']['SendMessageBatchResult']['SendMessageBatchResultEntry']:
+                if type(entry) != str:
+                    msg_id = entry['Id']
+                    msg_md5 = entry['MD5OfMessageBody']
+                    expact_md5 = expact_md5s.get(msg_id, None)
+
+                    if expact_md5 != msg_md5:
+                        sqs_v_logger.warn("md5 is not matched. Expect: {}, Received: {}".format(expact_md5, msg_md5))
+                    else:
+                        sqs_v_logger.info("msg send sucessfully with id: %s" % msg_id)
+        else:
+            entry = sqs_result['SendMessageBatchResponse']['SendMessageBatchResult']['SendMessageBatchResultEntry']
+            msg_id = entry['Id']
+            msg_md5 = entry['MD5OfMessageBody']
+            expact_md5 = expact_md5s.get(msg_id, None)
             if expact_md5 != msg_md5:
                 sqs_v_logger.warn("md5 is not matched. Expect: {}, Received: {}".format(expact_md5, msg_md5))
             else:
                 sqs_v_logger.info("msg send sucessfully with id: %s" % msg_id)
+
 
     if callback:
         callback(response)
@@ -144,7 +158,3 @@ class SQSQueue(AWSClient):
 
     def get(self, message_number=1):
         pass
-
-    def __len__(self):
-        return len(self.client)
-

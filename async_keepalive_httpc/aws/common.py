@@ -17,3 +17,6 @@ class AWSClient(object):
         )
 
         self.client = SimpleKeepAliveHTTPClient(self.io_loop)
+
+    def __len__(self):
+        return len(self.client)
