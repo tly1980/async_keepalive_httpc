@@ -32,9 +32,11 @@ And, last but not least, a simple resource pool.
 Example
 =======
 .. code-block:: python
-
- ska_client = SimpleKeepAliveHTTPClient(self.io_loop)
  
+ from async_keepalive_httpc.keepalive_client import SimpleKeepAliveHTTPClient
+ 
+ 
+ ska_client = SimpleKeepAliveHTTPClient(self.io_loop)
  
  # just assume that you have a http server that supports connection keep-alive and
  # it has a.txt which just has a simple text 'aaa'. Accordingly, b.txt has a simple text
@@ -64,6 +66,8 @@ SQS
 
 .. code-block:: python
 
+ from async_keepalive_httpc.aws.sqs import SQSQueue
+
  q = SQSQueue(
      io_loop,
      'AWS_ACCESS_KEY',
@@ -87,7 +91,9 @@ DynamoDB
 ========
 
 .. code-block:: python
-
+ 
+ from async_keepalive_httpc.aws.dynamodb import DynamoDB
+ 
  db = DynamoDB(
      self.io_loop,
      'AWS_ACCESS_KEY',
