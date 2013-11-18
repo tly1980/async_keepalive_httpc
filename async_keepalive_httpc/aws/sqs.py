@@ -3,15 +3,12 @@ import urllib
 import md5
 import functools
 
-
-import tornado
 import xmltodict
+import shortuuid
 
+import tornado.httpclient
 
-from async_keepalive_httpc.pool import KeepAlivePool
-from async_keepalive_httpc.request import UrlInfo, Request
-
-from .auth import EasyV4Sign
+from async_keepalive_httpc.aws.common import AWSClient
 
 sqs_v_logger = logging.getLogger("sqs_verification")
 
@@ -22,79 +19,142 @@ def md5_hexdigest(data):
     return m.hexdigest()
 
 
-def verify_and_callback(request, expact_md5=None, callback=None):
-    sqs_v_logger.debug("resp code / text: %s - %s" %(request.resp_code, request.resp_text))
-    if request.resp_code != 200:
-        sqs_v_logger.warn("resp body: \n%s" % request.resp_data)
-        sqs_v_logger.warn("orig req: \n%s" % request.req())
-        
+def verify_send(response, expact_md5=None, callback=None):
+    sqs_v_logger.info("resp [%s - %s]: \n" % 
+        (response.code, response.reason))
+
+    if response.code != 200:
+        sqs_v_logger.warn("resp [%s - %s]: \n %s" % (
+            response.code, response.reason, response.body))
     else:
-        sqs_result = xmltodict.parse(request.resp_data)
+        sqs_result = xmltodict.parse(response.body)
         msg_id = sqs_result['SendMessageResponse']['SendMessageResult']['MessageId']
         msg_md5 = sqs_result['SendMessageResponse']['SendMessageResult']['MD5OfMessageBody']
+
         if expact_md5 != msg_md5:
-            sqs_v_logger.warn("md5 is not matched")
+            sqs_v_logger.warn("md5 is not matched. Expect: {}, Received: {}".format(expact_md5, msg_md5))
         else:
             sqs_v_logger.info("msg send sucessfully with id: %s" % msg_id)
 
     if callback:
-        callback(request)
+        callback(response)
 
 
-class Sender(object):
+def verify_send_batch(response,  request=None, expact_md5s=None, callback=None):
+    assert(request==response.request)
+    sqs_v_logger.info("resp [%s - %s]: \n" % 
+        (response.code, response.reason))
+    if response.code != 200:
+        sqs_v_logger.warn("resp [%s - %s]: \n %s" % (
+            response.code, response.reason, response.body))
+    else:
+        sqs_result = xmltodict.parse(response.body)
+
+        if type(
+            sqs_result['SendMessageBatchResponse']['SendMessageBatchResult']['SendMessageBatchResultEntry']) == list:
+            for entry in sqs_result['SendMessageBatchResponse']['SendMessageBatchResult']['SendMessageBatchResultEntry']:
+                if type(entry) != str:
+                    msg_id = entry['Id']
+                    msg_md5 = entry['MD5OfMessageBody']
+                    expact_md5 = expact_md5s.get(msg_id, None)
+
+                    if expact_md5 != msg_md5:
+                        sqs_v_logger.warn("md5 is not matched. Expect: {}, Received: {}".format(expact_md5, msg_md5))
+                    else:
+                        sqs_v_logger.info("msg send sucessfully with id: %s" % msg_id)
+        else:
+            entry = sqs_result['SendMessageBatchResponse']['SendMessageBatchResult']['SendMessageBatchResultEntry']
+            msg_id = entry['Id']
+            msg_md5 = entry['MD5OfMessageBody']
+            expact_md5 = expact_md5s.get(msg_id, None)
+            if expact_md5 != msg_md5:
+                sqs_v_logger.warn("md5 is not matched. Expect: {}, Received: {}".format(expact_md5, msg_md5))
+            else:
+                sqs_v_logger.info("msg send sucessfully with id: %s" % msg_id)
+
+
+    if callback:
+        callback(response)
+
+
+class SQSQueue(AWSClient):
+    _service = 'sqs'
     _version = "2012-11-05"
-    _tmpl = 'Action=SendMessage&Version={version}&MessageBody={msg_body}'
-    _header_tpl = { 
-        'Content-type':'application/x-www-form-urlencoded; charset=utf-8'
-    }
 
-    def __init__(self, 
+    def __init__(self, io_loop,
         access_key, secret_key, q_url, 
-        endpoint='ap-southeast-2',
-        max_connection=4, io_loop=tornado.ioloop.IOLoop.instance()):
-        self.q_url_info = UrlInfo(q_url)
+        endpoint='ap-southeast-2', verify=True):
+
+        super(SQSQueue, self).__init__(
+            io_loop, access_key, secret_key, endpoint )
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.verify = verify
         self.q_url = q_url
-        self.ka_httpc_pool = KeepAlivePool(
-            self.q_url_info.host,
-            port=self.q_url_info.port,
-            is_ssl=self.q_url_info.is_ssl,
-            init_count=1,
-            max_count=max_connection,
-            io_loop=io_loop)
-        self.logger = logging.getLogger(Sender.__class__.__name__)
-        self.access_key = access_key
-        self.secret_key = secret_key
-        self.endpoint = endpoint
 
-    def send(self, msg, callback=None):
 
-        v4sign = EasyV4Sign(
-            self.access_key, self.secret_key,
-            'sqs',
-            endpoint=self.endpoint
-        )
-
+    def send(self, msg, callback=None, headers={}):
         msg_body = urllib.quote_plus(msg)
 
-        query = {
+        data = {
             'Action': 'SendMessage', 
             'MessageBody': msg_body,
-            'Version': '2012-11-05',
+            'Version': self._version,
         }
 
-        l = ['='.join([k, query[k]]) for k in sorted(query.keys())]
-        body = '&'.join(l)
+        x_method, x_url, x_headers, x_body = self.v4sign.sign_post(
+            self.q_url, headers, data=data)
+        if self.verify:
+            md5_unquoted= md5_hexdigest(msg)
+            self.logger.debug('authinfo  for {} is {}'.format(msg_body, x_headers['Authorization']))
 
-        x_method, x_url, x_headers, x_body = v4sign.sign(
-            self.q_url, self._header_tpl, body, method='POST')
+            cb = functools.partial(verify_send, expact_md5=md5_unquoted, callback=callback)
+        else:
+            cb = callback
+        return self.client.fetch(x_url, callback=cb, method='POST', headers=x_headers, body=x_body)
 
-        expact_md5 = md5_hexdigest(msg_body)
+    def send_batch(self, messages=[], callback=None, headers={}):
 
-        sq_mgr = self.ka_httpc_pool.get()
+        data = {
+            'Action': 'SendMessageBatch', 
+            'Version': self._version,
+        }
 
-        cb = functools.partial(verify_and_callback, expact_md5=expact_md5, callback=callback)
+        if self.verify:
+            expact_md5s = {}
 
-        self.logger.info('authinfo  for {} is {}'.format(msg_body,x_headers['Authorization'] ))
+            for i, m in enumerate(messages, 1):
+                n_id = 'SendMessageBatchRequestEntry.{}.Id'.format(i)
+                n_body = 'SendMessageBatchRequestEntry.{}.MessageBody'.format(i)
+                m_body = urllib.quote_plus(m)
 
-        r = Request(UrlInfo(x_url), method="POST", callback=cb, extra_headers=x_headers, body=x_body)
-        sq_mgr.add(r)
+                data[n_id] = shortuuid.uuid()
+                data[n_body] = m_body
+                expact_md5s[data[n_id]] = md5_hexdigest(m)
+
+            x_method, x_url, x_headers, x_body = self.v4sign.sign_post(
+                self.q_url, headers, data=data)
+
+            r = tornado.httpclient.HTTPRequest(x_url, method='POST', headers=x_headers, body=x_body)
+            cb = functools.partial(verify_send_batch, request=r, expact_md5s=expact_md5s, callback=callback)
+        else:
+            for i, m in enumerate(messages, 1):
+                n_id = 'SendMessageBatchRequestEntry.{}.Id'.format(i)
+                n_body = 'SendMessageBatchRequestEntry.{}.MessageBody'.format(i)
+                m_body = urllib.quote_plus(m)
+
+                data[n_id] = shortuuid.uuid()
+                data[n_body] = m_body
+
+            x_method, x_url, x_headers, x_body = self.v4sign.sign_post(
+                self.q_url, headers, data=data)
+
+            r = tornado.httpclient.HTTPRequest(x_url, method='POST', headers=x_headers, body=x_body)
+            cb = callback
+
+        self.logger.debug('send_batch authinfo is {}'.format(x_headers['Authorization']))
+
+        return self.client.fetch(r, callback=cb, method='POST')
+
+
+    def get(self, message_number=1):
+        pass
