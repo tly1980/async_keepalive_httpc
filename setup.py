@@ -26,6 +26,7 @@ setup(name='Async KeepAlive HTTP client',
         'tornado>=3.0',
         'botocore>=0.20.0',
         'xmltodict>=0.8.0',
+        'PyYAML>=3.0'
       ],
       include_package_data=True,
       package_data={
