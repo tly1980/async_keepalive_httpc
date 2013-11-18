@@ -6,11 +6,30 @@
 :Date: .. |date|
 :Description: Async Keep-Alive Http Client
 
+Keep-alive_ is a well-known and popular technique to reduce the latencies and speed up the resource retrival.
+(See <http://chimera.labs.oreilly.com/books/1230000000545/ch11.html#BENEFITS_OF_KEEPALIVE>)
+
+It allows one connection to request multiple resources, which can avoid
+the penalties of establishing and closing a HTTP connection, and quite significantly for HTTPS connection.
+
+Tornado_ is highly efficient Python asynchronous web framework & network libary. 
+and I am quite enjoying using to build high performance web application.
+However, Tornado_ does not ship with a httpclient that support Keep-alive out of box up to now (v3.1.1 October, 2013.)
+
+And that is exactly why I created this libaray, which comes with a HTTP client that supports Keep-Alive feature.
+This client is basically a hack of tornado Httpclient and HttpConnection, so the API is very much the same, 
+which means it can use Tornado HTTPRequest and most feature of the original client 
+(like gzip, proxies, .etc - Warrning: further tests needed to be conducted for this features.).
 
 
-This libaray comes with a HTTP client that supports Keep-Alive feature.
-Besides that, the libaray also provide a limited support to some of the AWS services: SQS and DyanmoDB.
+Besides that, the libaray also provide a Queue Function limited support to some of the AWS services: SQS and DyanmoDB.
 
+.. _Tornado: http://www.tornadoweb.org/en/stable
+.. _Keep-alive: http://en.wikipedia.org/wiki/HTTP_persistent_connection
+.. technique_: http://chimera.labs.oreilly.com/books/1230000000545/ch11.html#BENEFITS_OF_KEEPALIVE
+
+Example
+=======
 .. code-block:: python
 
  ska_client = SimpleKeepAliveHTTPClient(self.io_loop)
@@ -34,3 +53,69 @@ Besides that, the libaray also provide a limited support to some of the AWS serv
  # rather than disconnect and connect reapeatly.
  assert ska_client.connection.connect_times == 1
  
+ 
+===========
+AWS Support
+===========
+
+SQS
+===
+
+.. code-block:: python
+
+ q = SQSQueue(
+     io_loop,
+     'AWS_ACCESS_KEY',
+     'AWS_SECRET_KEY',
+     'https://ap-southeast-2.queue.amazonaws.com/YOUR_ACCOUNT_NUMBER/YOUR_QUEUE_NAME',
+     endpoints='ap-southeast-2')
+
+ r1 = yield q.send('abc')
+ r2 = yield q.send('cde')
+ r3 = yield q.send('fgh')
+
+ assert r1.code == 200
+ assert r2.code == 200
+ assert r3.code == 200
+
+ # make sure it is 'keep-alive'
+ assert q.client.connection.connect_times == 1
+ 
+
+DynamoDB
+========
+
+.. code-block:: python
+
+ db = DynamoDB(
+     self.io_loop,
+     'AWS_ACCESS_KEY',
+     'AWS_SECRET_KEY',
+     endpoints='ap-southeast-2')
+ 
+ resp = yield db.get_item('TEST_USER_DATA', 
+     {
+         'USER_ID': {'S':'EEB750F4-C589-4C0A-95C3-C1B572A0CC3E'}, 
+     }, 
+     attributes_to_get = ['Name']
+ )
+
+ print resp.aws_result
+
+
+Output would be something like:
+
+.. code-block:: python
+
+ {
+   'Item': { 
+      'DATA': { 
+        'S': 'Tom Cruse'
+      }
+   }
+ }
+
+
+
+
+
