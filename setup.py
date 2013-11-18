@@ -11,7 +11,7 @@ def load_version():
 
     with open(v_path, 'rb') as f:
         v = json.load(f)
-        return v['main']
+        return v['main'].split('/')[1]
 
 setup(name='Async KeepAlive HTTP client',
       version=load_version(),
