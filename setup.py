@@ -23,7 +23,6 @@ setup(name='async_keepalive_httpc',
       license='BSD',
       author='Tom Tang',
       author_email='tly1980@gmail.com',
-      packages=['async_keepalive_httpc', 'async_keepalive_httpc.aws'],
       url="https://github.com/tly1980/async_keepalive_httpc",
       platforms='any',
       install_requires = [
@@ -33,6 +32,7 @@ setup(name='async_keepalive_httpc',
         'PyYAML>=3.0'
       ],
       include_package_data=True,
+      packages=['async_keepalive_httpc', 'async_keepalive_httpc.aws'],
       package_data={
         'async_keepalive_httpc': ['async_keepalive_httpc/VERSION.json'],
       },
