@@ -1,9 +1,10 @@
 import os
+import unittest
 
 import boto.sqs
 import yaml
 from tornado.testing import AsyncTestCase, gen_test
-import shortuuid
+import botocore.credentials
 
 from async_keepalive_httpc.aws.sqs import SQSQueue
 from async_keepalive_httpc.aws.auth import EasyV4Sign, IamRoleV4Sign
@@ -96,6 +97,8 @@ class SQSTestCase(AsyncTestCase):
         # make sure it is 'keep-alive'
         self.assertEqual(self.q.client.connection.connect_times, 1)
 
+    @unittest.skipIf(botocore.credentials.search_iam_role(),
+        "this testcase will skip in AWS enviornment")
     @gen_test(timeout=100)
     def test_send_batch_with_signer(self):
         signer = EasyV4Sign(
@@ -109,5 +112,4 @@ class SQSTestCase(AsyncTestCase):
         r1 = yield q.send_batch(messages=['1abc', '2def', '3ghi'])
         self.assertEqual(r1.code, 200)
 
-        # make sure it is 'keep-alive'
         self.assertEqual(q.client.connection.connect_times, 1)
