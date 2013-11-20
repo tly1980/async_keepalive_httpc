@@ -87,7 +87,7 @@ class DynamoDBTestCase(AsyncTestCase):
         else:
             signer = IamRoleV4Sign(
                 self.io_loop,
-                'sqs',
+                'dynamodb',
                 region = self._region
             )
 
