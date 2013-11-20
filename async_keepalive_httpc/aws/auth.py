@@ -117,7 +117,7 @@ class IamRoleV4Sign(EasyV4Sign):
     def start(self):
         self.logger.info('about to get new credentials')
         self.credentials = botocore.credentials.search_iam_role()
-        self.sigV4auth = botocore.credentials.SigV4Auth(
+        self.sigV4auth = SigV4Auth(
             self.credentials, self.service, self.endpoint)
 
         self.logger.info('finish getting new credentials')
