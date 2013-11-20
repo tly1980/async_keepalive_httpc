@@ -123,9 +123,9 @@ class IamRoleV4Sign(EasyV4Sign):
         self.logger.info('finish getting new credentials')
 
         if self.role:
-            role_metadata = botocore._search_md()[self.role]
+            role_metadata = botocore.credentials._search_md()[self.role]
         else:
-            role_metadata = botocore._search_md().values()[0]
+            role_metadata = botocore.credentials._search_md().values()[0]
 
         utc_expiration = dateutil.parser.parse(role_metadata['Expiration'])
         
