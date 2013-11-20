@@ -112,6 +112,7 @@ class IamRoleV4Sign(EasyV4Sign):
         self.before = before
         self.role = role
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.start()
 
     def start(self):
         self.logger.info('about to get new credentials')
