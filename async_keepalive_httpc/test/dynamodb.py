@@ -7,11 +7,12 @@ from tornado.testing import AsyncTestCase, gen_test
 import boto.dynamodb
 
 from async_keepalive_httpc.aws.dynamodb import DynamoDB
-
+from async_keepalive_httpc.aws.auth import IamRoleV4Sign
 
 class DynamoDBTestCase(AsyncTestCase):
     type_key = 'unittesting'
-    region = 'ap-southeast-2'
+    _region = 'ap-southeast-2'
+    _table_name = 'UT_USER_DATA'
 
     test_data = [
         {'a': 123, 'b': 456},
@@ -26,18 +27,36 @@ class DynamoDBTestCase(AsyncTestCase):
             )
         )
 
+        is_using_meta = False
+
         with open(path, 'rb') as f:
             d = yaml.load(f.read())
             self.Q_URL = d['Q_URL']
             self.ACCESS_KEY = d['ACCESS_KEY']
             self.SECRET_KEY = d['SECRET_KEY']
 
-        self.boto_db = boto.dynamodb.connect_to_region(
-            self.region,
-            aws_access_key_id=self.ACCESS_KEY,
-            aws_secret_access_key=self.SECRET_KEY)
-
-        self.test_table = self.boto_db.get_table('DEV_USER_DATA')
+        if os.path.isfile(path):
+            self.boto_db = boto.dynamodb.connect_to_region(
+                self._region,
+                aws_access_key_id=self.ACCESS_KEY,
+                aws_secret_access_key=self.SECRET_KEY)
+        else:
+            is_using_meta = True
+            self.boto_db = boto.dynamodb.connect_to_region(
+                self._region)
+        try:
+            self.test_table = self.boto_db.get_table(self._table_name)
+        except:
+            _schema = self.boto_db.create_schema(
+                hash_key_name='USER_ID',
+                hash_key_proto_value=str,
+                range_key_name='TYPE',
+                range_key_proto_value=str
+                )
+            self.test_table = self.boto_db.create_table(
+                name=self._table_name,
+                schema=_schema,
+                read_units=1, write_units=1)
 
         self.test_keys = [str(uuid.uuid4()) for i in xrange(len(self.test_data))]
 
@@ -57,19 +76,36 @@ class DynamoDBTestCase(AsyncTestCase):
             item.put()
             self.items.append(item)
 
+        if not is_using_meta:
+            self.db = DynamoDB(
+                self.io_loop,
+                self.ACCESS_KEY,
+                self.SECRET_KEY,
+                region=self._region)
+        else:
+            signer = IamRoleV4Sign(
+                self.io_loop,
+                'sqs',
+                region = self._region
+            )
+
+            self.db = DynamoDB(
+                self.io_loop,
+                signer=signer,
+                region=self._region)
+
+
     @gen_test(timeout=100)
     def test_get_item(self):
 
         resp = None
         self.callback_data = None
 
-        db = DynamoDB(
-            self.io_loop,
-            self.ACCESS_KEY,
-            self.SECRET_KEY)
+
         
         for k, d in zip(self.test_keys, self.test_data):
-            resp = yield db.get_item('DEV_USER_DATA', 
+            resp = yield self.db.get_item(
+                self._table_name, 
                 {
                     'USER_ID': {'S': k}, 
                     'TYPE': {'S': self.type_key}, 

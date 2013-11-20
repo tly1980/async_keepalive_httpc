@@ -8,20 +8,6 @@ from async_keepalive_httpc.aws.auth import EasyV4Sign
 
 class EasyV4SignTest(unittest.TestCase):
 
-    def setUp(self):
-        super(EasyV4SignTest, self).setUp()
-        path = os.path.abspath(
-            os.path.join (
-                os.path.dirname(__file__), 'aws_keypair.yaml' 
-            )
-        )
-
-        with open(path, 'rb') as f:
-            d = yaml.load(f.read())
-            self.Q_URL = d['Q_URL']
-            self.ACCESS_KEY = d['ACCESS_KEY']
-            self.SECRET_KEY = d['SECRET_KEY']
-
     def test_sign_get(self):
         ACCESS_KEY = 'AKIDEXAMPLE'
         SECRET_KEY = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY"
