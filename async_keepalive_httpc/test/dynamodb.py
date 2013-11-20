@@ -29,17 +29,19 @@ class DynamoDBTestCase(AsyncTestCase):
 
         is_using_meta = False
 
-        with open(path, 'rb') as f:
-            d = yaml.load(f.read())
-            self.Q_URL = d['Q_URL']
-            self.ACCESS_KEY = d['ACCESS_KEY']
-            self.SECRET_KEY = d['SECRET_KEY']
-
         if os.path.isfile(path):
+            with open(path, 'rb') as f:
+                d = yaml.load(f.read())
+                self.Q_URL = d['Q_URL']
+                self.ACCESS_KEY = d['ACCESS_KEY']
+                self.SECRET_KEY = d['SECRET_KEY']
+
             self.boto_db = boto.dynamodb.connect_to_region(
                 self._region,
                 aws_access_key_id=self.ACCESS_KEY,
                 aws_secret_access_key=self.SECRET_KEY)
+
+
         else:
             is_using_meta = True
             self.boto_db = boto.dynamodb.connect_to_region(
