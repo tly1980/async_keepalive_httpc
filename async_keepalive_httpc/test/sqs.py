@@ -59,8 +59,8 @@ class SQSTestCase(AsyncTestCase):
             )
         else:
             signer = IamRoleV4Sign(
-                'sqs',
                 self.io_loop,
+                'sqs',
                 endpoint = self._region
             )
 
