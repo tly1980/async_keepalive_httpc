@@ -7,6 +7,7 @@ cover:
 	nosetests --cover-package=async_keepalive_httpc --with-cover --cover-tests --cover-html
 
 clean: nopyc
+	rm -rf *.egg-info/
 	rm -rf ./cover
 	rm -rf ./build
 	rm -rf ./dist
