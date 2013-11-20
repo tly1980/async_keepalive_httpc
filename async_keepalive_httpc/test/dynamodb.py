@@ -81,8 +81,8 @@ class DynamoDBTestCase(AsyncTestCase):
         if not is_using_meta:
             self.db = DynamoDB(
                 self.io_loop,
-                self.ACCESS_KEY,
-                self.SECRET_KEY,
+                access_key=self.ACCESS_KEY,
+                secret_key=self.SECRET_KEY,
                 region=self._region)
         else:
             signer = IamRoleV4Sign(
