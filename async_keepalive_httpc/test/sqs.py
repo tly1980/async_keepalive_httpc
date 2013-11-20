@@ -30,7 +30,6 @@ class SQSTestCase(AsyncTestCase):
 
             with open(path, 'rb') as f:
                 d = yaml.load(f.read())
-                self.Q_URL = d['Q_URL']
                 self.ACCESS_KEY = d['ACCESS_KEY']
                 self.SECRET_KEY = d['SECRET_KEY']
 
@@ -44,8 +43,11 @@ class SQSTestCase(AsyncTestCase):
             self.boto_conn = boto.sqs.connect_to_region(self._region)
 
         self.boto_q = self.boto_conn.get_queue(self._q_name) 
+
         if not self.boto_q:
             self.boto_q = self.boto_conn.create_queue(self._q_name)
+
+        self.Q_URL = self.boto_q.url
 
         if not is_using_meta:
             self.q = SQSQueue(
