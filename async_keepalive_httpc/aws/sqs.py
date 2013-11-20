@@ -81,12 +81,9 @@ class SQSQueue(AWSClient):
     _service = 'sqs'
     _version = "2012-11-05"
 
-    def __init__(self, io_loop,
-        access_key, secret_key, q_url, 
-        endpoint='ap-southeast-2', verify=True):
+    def __init__(self, io_loop, q_url, verify=True, **kwargs):
 
-        super(SQSQueue, self).__init__(
-            io_loop, access_key, secret_key, endpoint )
+        super(SQSQueue, self).__init__(io_loop, **kwargs)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.verify = verify
         self.q_url = q_url

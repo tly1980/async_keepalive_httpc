@@ -1,8 +1,13 @@
+import logging
+
 import botocore.credentials
 from botocore.auth import SigV4Auth
 import datetime
+import dateutil.parser
+from dateutil.tz import tzutc
 
 from async_keepalive_httpc.utils import json
+
 
 class DummyRequest(object):
     '''
@@ -93,4 +98,38 @@ class EasyV4Sign(object):
         self.sigV4auth.add_auth(r)
 
         return (r.method, r.url, r.headers, r.body)
+
+
+class IamRoleV4Sign(EasyV4Sign):
+    def __init__(self, io_loop, 
+        service, 
+        endpoint='ap-southeast-2',
+        role = None,
+        before=datetime.timedelta(minutes=5)):
+        self.io_loop = io_loop
+        self.service = service
+        self.endpoint = endpoint
+        self.before = before
+        self.role = role
+        self.logger = logging.getLogger(self.__class__.__name__)
+
+    def start(self):
+        self.logger.info('about to get new credentials')
+        self.credentials = botocore.credentials.search_iam_role()
+        self.sigV4auth = botocore.credentials.SigV4Auth(
+            self.credentials, self.service, self.endpoint)
+
+        self.logger.info('finish getting new credentials')
+
+        if self.role:
+            role_metadata = botocore._search_md()[self.role]
+        else:
+            role_metadata = botocore._search_md().values()[0]
+
+        utc_expiration = dateutil.parser.parse(role_metadata['Expiration'])
+        
+        t_delta = utc_expiration - datetime.datetime.now(tzutc()) - self.before
+        self.logger.info('next time to get credentials would be {} seconds later'.format(
+            t_delta.total_seconds()))
+        self._timeout = self.io_loop.add_timeout(t_delta, self.start)
 
