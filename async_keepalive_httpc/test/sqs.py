@@ -56,20 +56,20 @@ class SQSTestCase(AsyncTestCase):
                 self.Q_URL,
                 access_key = self.ACCESS_KEY,
                 secret_key= self.SECRET_KEY,
-                endpoint=self._region
+                region=self._region
             )
         else:
             signer = IamRoleV4Sign(
                 self.io_loop,
                 'sqs',
-                endpoint = self._region
+                region = self._region
             )
 
             self.q = SQSQueue(
                 self.io_loop,
                 self.Q_URL,
                 signer = signer,
-                endpoint=self._region,
+                region=self._region,
             )
 
     # def tearDown(self):

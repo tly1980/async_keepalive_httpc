@@ -30,7 +30,7 @@ class EasyV4SignTest(unittest.TestCase):
             ACCESS_KEY, 
             SECRET_KEY,
             'host',
-            endpoint='us-east-1',
+            region='us-east-1',
         )
 
         timestamp = '20110909T233600Z'
@@ -52,7 +52,7 @@ class EasyV4SignTest(unittest.TestCase):
             ACCESS_KEY, 
             SECRET_KEY,
             'iam',
-            endpoint='us-east-1',
+            region='us-east-1',
         )
 
         timestamp = '20110909T233600Z'

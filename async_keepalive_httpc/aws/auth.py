@@ -35,16 +35,16 @@ class EasyV4Sign(object):
     def __init__(self, 
             access_key, secret_key,
             service,
-            endpoint='ap-southeast-2'):
+            region='ap-southeast-2'):
 
-        self.endpoint = endpoint
+        self.region = region
         self.access_key = access_key
         self.secret_key = secret_key
         self.credentials = botocore.credentials.Credentials(
             self.access_key, self.secret_key)
         self.service = service
         self.sigV4auth = SigV4Auth(
-            self.credentials, self.service, self.endpoint)
+            self.credentials, self.service, self.region)
 
 
     def sign_post(self, url, headers, data={}, timestamp=None):
@@ -103,12 +103,12 @@ class EasyV4Sign(object):
 class IamRoleV4Sign(EasyV4Sign):
     def __init__(self, io_loop, 
         service, 
-        endpoint='ap-southeast-2',
+        region='ap-southeast-2',
         role = None,
         before=datetime.timedelta(minutes=5)):
         self.io_loop = io_loop
         self.service = service
-        self.endpoint = endpoint
+        self.region = region
         self.before = before
         self.role = role
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -118,7 +118,7 @@ class IamRoleV4Sign(EasyV4Sign):
         self.logger.info('about to get new credentials')
         self.credentials = botocore.credentials.search_iam_role()
         self.sigV4auth = SigV4Auth(
-            self.credentials, self.service, self.endpoint)
+            self.credentials, self.service, self.region)
 
         self.logger.info('finish getting new credentials')
 

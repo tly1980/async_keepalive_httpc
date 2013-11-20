@@ -11,7 +11,7 @@ from async_keepalive_httpc.aws.dynamodb import DynamoDB
 
 class DynamoDBTestCase(AsyncTestCase):
     type_key = 'unittesting'
-    endpoint = 'ap-southeast-2'
+    region = 'ap-southeast-2'
 
     test_data = [
         {'a': 123, 'b': 456},
@@ -33,7 +33,7 @@ class DynamoDBTestCase(AsyncTestCase):
             self.SECRET_KEY = d['SECRET_KEY']
 
         self.boto_db = boto.dynamodb.connect_to_region(
-            self.endpoint,
+            self.region,
             aws_access_key_id=self.ACCESS_KEY,
             aws_secret_access_key=self.SECRET_KEY)
 
