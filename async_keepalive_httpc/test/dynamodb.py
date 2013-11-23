@@ -1,7 +1,6 @@
-import os
-import uuid
-import json
+import os, uuid, json
 import functools
+import unittest
 
 import yaml
 from tornado.testing import AsyncTestCase, gen_test
@@ -9,6 +8,18 @@ import boto.dynamodb
 
 import async_keepalive_httpc.aws.dynamodb
 from async_keepalive_httpc.aws.auth import IamRoleV4Sign
+
+
+if os.environ.get('PROXY_HOST'):
+    PROXY_CONFIG = dict(
+        zip(
+            ['proxy_host', 'proxy_port'],
+            [os.environ.get('PROXY_HOST'), int(os.environ.get('PROXY_PORT'))]
+        )
+    )
+else:
+    PROXY_CONFIG = {}
+
 
 class DynamoDBTestCase(AsyncTestCase):
     type_key = 'unittesting'
@@ -120,8 +131,10 @@ class DynamoDBTestCase(AsyncTestCase):
 
             self.assertEqual(d, json.loads(resp.aws_result['Item']['DATA']['S']))
 
-
+@unittest.skipIf(not PROXY_CONFIG, "HTTP_PROXY enviornment variable is not set.")
 class CurlDynamoDBTestCase(DynamoDBTestCase):
     _DynamoDB = functools.partial(
-        async_keepalive_httpc.aws.dynamodb.DynamoDB, use_curl=True
+        async_keepalive_httpc.aws.dynamodb.DynamoDB, 
+        proxy_config=PROXY_CONFIG
     )
+

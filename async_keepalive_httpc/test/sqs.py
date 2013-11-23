@@ -11,6 +11,17 @@ import async_keepalive_httpc.aws.sqs
 from async_keepalive_httpc.aws.auth import EasyV4Sign, IamRoleV4Sign
 
 
+if os.environ.get('PROXY_HOST'):
+
+    PROXY_CONFIG = dict(
+        zip(
+            ['proxy_host', 'proxy_port'],
+            [os.environ.get('PROXY_HOST'), int(os.environ.get('PROXY_PORT'))]
+        )
+    )
+
+else:
+    PROXY_CONFIG = {}
 
 class SQSTestCase(AsyncTestCase):
 
@@ -121,9 +132,9 @@ class SQSTestCase(AsyncTestCase):
         if not self.q.use_curl:
             self.assertEqual(q.client.connection.connect_times, 1)
 
-
+@unittest.skipIf(not PROXY_CONFIG, "HTTP_PROXY enviornment variable is not set.")
 class SQSTestCaseCurl(SQSTestCase):
     _SQSQueue = functools.partial(
-        async_keepalive_httpc.aws.sqs.SQSQueue, use_curl=True)
+        async_keepalive_httpc.aws.sqs.SQSQueue, proxy_config=PROXY_CONFIG)
 
 
