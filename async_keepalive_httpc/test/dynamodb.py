@@ -1,12 +1,13 @@
 import os
 import uuid
 import json
+import functools
 
 import yaml
 from tornado.testing import AsyncTestCase, gen_test
 import boto.dynamodb
 
-from async_keepalive_httpc.aws.dynamodb import DynamoDB
+import async_keepalive_httpc.aws.dynamodb
 from async_keepalive_httpc.aws.auth import IamRoleV4Sign
 
 class DynamoDBTestCase(AsyncTestCase):
@@ -18,6 +19,10 @@ class DynamoDBTestCase(AsyncTestCase):
         {'a': 123, 'b': 456},
         {'foo': 9123, 'bar': 9456},
     ]
+
+    _DynamoDB = functools.partial(
+        async_keepalive_httpc.aws.dynamodb.DynamoDB, use_curl=False
+    )
 
     def setUp(self):
         super(DynamoDBTestCase, self).setUp()
@@ -79,7 +84,7 @@ class DynamoDBTestCase(AsyncTestCase):
             self.items.append(item)
 
         if not is_using_meta:
-            self.db = DynamoDB(
+            self.db = self._DynamoDB(
                 self.io_loop,
                 access_key=self.ACCESS_KEY,
                 secret_key=self.SECRET_KEY,
@@ -91,7 +96,7 @@ class DynamoDBTestCase(AsyncTestCase):
                 region = self._region
             )
 
-            self.db = DynamoDB(
+            self.db = self._DynamoDB(
                 self.io_loop,
                 signer=signer,
                 region=self._region)
@@ -103,8 +108,6 @@ class DynamoDBTestCase(AsyncTestCase):
         resp = None
         self.callback_data = None
 
-
-        
         for k, d in zip(self.test_keys, self.test_data):
             resp = yield self.db.get_item(
                 self._table_name, 
@@ -117,3 +120,8 @@ class DynamoDBTestCase(AsyncTestCase):
 
             self.assertEqual(d, json.loads(resp.aws_result['Item']['DATA']['S']))
 
+
+class CurlDynamoDBTestCase(DynamoDBTestCase):
+    _DynamoDB = functools.partial(
+        async_keepalive_httpc.aws.dynamodb.DynamoDB, use_curl=True
+    )
