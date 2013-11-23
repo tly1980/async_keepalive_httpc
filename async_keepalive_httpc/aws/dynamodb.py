@@ -228,12 +228,13 @@ class DynamoDB(DynamoAPI, AWSClient):
     _service = 'DynamoDB'
     _version = "20120810"
 
-    def __init__(self,  io_loop, access_key, secret_key, endpoint='ap-southeast-2', is_ssl=False):
+    def __init__(self,  io_loop, is_ssl=False, **kwargs):
+
         super(DynamoDB, self).__init__(
-            io_loop, access_key, secret_key, endpoint)
+            io_loop, **kwargs)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.is_ssl = is_ssl
         if self.is_ssl:
-            self.url = 'https://dynamodb.{}.amazonaws.com/'.format(self.endpoint)
+            self.url = 'https://dynamodb.{}.amazonaws.com/'.format(self.region)
         else:
-            self.url = 'http://dynamodb.{}.amazonaws.com/'.format(self.endpoint)
+            self.url = 'http://dynamodb.{}.amazonaws.com/'.format(self.region)

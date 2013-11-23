@@ -1,8 +1,13 @@
+import logging
+
 import botocore.credentials
 from botocore.auth import SigV4Auth
 import datetime
+import dateutil.parser
+from dateutil.tz import tzutc
 
 from async_keepalive_httpc.utils import json
+
 
 class DummyRequest(object):
     '''
@@ -30,16 +35,16 @@ class EasyV4Sign(object):
     def __init__(self, 
             access_key, secret_key,
             service,
-            endpoint='ap-southeast-2'):
+            region='ap-southeast-2'):
 
-        self.endpoint = endpoint
+        self.region = region
         self.access_key = access_key
         self.secret_key = secret_key
         self.credentials = botocore.credentials.Credentials(
             self.access_key, self.secret_key)
         self.service = service
         self.sigV4auth = SigV4Auth(
-            self.credentials, self.service, self.endpoint)
+            self.credentials, self.service, self.region)
 
 
     def sign_post(self, url, headers, data={}, timestamp=None):
@@ -93,4 +98,39 @@ class EasyV4Sign(object):
         self.sigV4auth.add_auth(r)
 
         return (r.method, r.url, r.headers, r.body)
+
+
+class IamRoleV4Sign(EasyV4Sign):
+    def __init__(self, io_loop, 
+        service, 
+        region='ap-southeast-2',
+        role = None,
+        before=datetime.timedelta(minutes=5)):
+        self.io_loop = io_loop
+        self.service = service
+        self.region = region
+        self.before = before
+        self.role = role
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.start()
+
+    def start(self):
+        self.logger.info('about to get new credentials')
+        self.credentials = botocore.credentials.search_iam_role()
+        self.sigV4auth = SigV4Auth(
+            self.credentials, self.service, self.region)
+
+        self.logger.info('finish getting new credentials')
+
+        if self.role:
+            role_metadata = botocore.credentials._search_md()[self.role]
+        else:
+            role_metadata = botocore.credentials._search_md().values()[0]
+
+        utc_expiration = dateutil.parser.parse(role_metadata['Expiration'])
+        
+        t_delta = utc_expiration - datetime.datetime.now(tzutc()) - self.before
+        self.logger.info('next time to get credentials would be {} seconds later'.format(
+            t_delta.total_seconds()))
+        self._timeout = self.io_loop.add_timeout(t_delta, self.start)
 
