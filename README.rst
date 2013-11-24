@@ -21,13 +21,19 @@ This client is basically a hack of tornado Httpclient and HttpConnection, so the
 which means it can use Tornado HTTPRequest and most feature of the original client 
 (like gzip, proxies, .etc - Warrning: further tests needed to be conducted for this features.).
 
+A _Proxy feature is included since version 0.13. The proxy implementation is using pycurl, so the the Keep-Alive feature would be disabled. 
 
 Besides that, the libaray also provide a Queue Function limited support to some of the AWS services: SQS and DyanmoDB.
 And, last but not least, a simple resource pool.
 
 .. _Tornado: http://www.tornadoweb.org/en/stable
+
 .. _Keep-alive: http://en.wikipedia.org/wiki/HTTP_persistent_connection
+
 .. technique_: http://chimera.labs.oreilly.com/books/1230000000545/ch11.html#BENEFITS_OF_KEEPALIVE
+
+.. _Proxy: http://en.wikipedia.org/wiki/Proxy_server
+
 
 Example
 =======
@@ -162,5 +168,23 @@ Resource Pool
          ska_client4 = pool.get()
          self.assertEqual(ska_client1, ska_client4)
 
+Using Proxy
+===========
 
+.. code-block:: python
+
+ from async_keepalive_httpc.aws.sqs import SQSQueue
+
+ PROXY_CONFIG = {
+   'proxy_host': 'localhost',
+   'proxy_port': 3128,
+ }
+
+ sqs = SQSQueue(io_loop,
+                Q_URL,
+                access_key = self.ACCESS_KEY,
+                secret_key= self.SECRET_KEY,
+                proxy_config=PROXY_CONFIG)
+ 
+ yield sqs.send('my msg via proxy')
 

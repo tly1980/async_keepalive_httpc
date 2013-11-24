@@ -1,7 +1,13 @@
-.PHONY: build test clean nopyc bump
+.PHONY: build test clean nopyc bump register
 
 test:
 	nosetests
+
+test_with_proxy:
+	export PROXY_HOST=http://127.0.0.1; export PROXY_PORT=8888; nosetests
+
+register: dist
+	python setup.py sdist register
 
 cover:
 	nosetests --cover-package=async_keepalive_httpc --with-cover --cover-tests --cover-html

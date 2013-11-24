@@ -1,4 +1,5 @@
 import logging
+
 from tornado.httpclient import HTTPRequest
 
 from async_keepalive_httpc.utils import json
@@ -40,7 +41,7 @@ class DynamoAPI(object):
         callback = functools.partial(self._finish_make_request,
             callback=callback, object_hook=object_hook)
 
-        return self.client.fetch(r, callback=callback)
+        return self.fire(r, callback=callback)
 
     def _finish_make_request(self, response, callback, object_hook=None):
         '''
