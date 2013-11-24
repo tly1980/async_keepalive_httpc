@@ -172,6 +172,7 @@ Using Proxy
 ===========
 
 .. code-block:: python
+
  from async_keepalive_httpc.aws.sqs import SQSQueue
 
  PROXY_CONFIG = {
