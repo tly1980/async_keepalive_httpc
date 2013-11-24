@@ -1,21 +1,35 @@
 import os
 import unittest
+import functools
 
 import boto.sqs
 import yaml
 from tornado.testing import AsyncTestCase, gen_test
 import botocore.credentials
 
-from async_keepalive_httpc.aws.sqs import SQSQueue
+import async_keepalive_httpc.aws.sqs
 from async_keepalive_httpc.aws.auth import EasyV4Sign, IamRoleV4Sign
 
 
+if os.environ.get('PROXY_HOST'):
+
+    PROXY_CONFIG = dict(
+        zip(
+            ['proxy_host', 'proxy_port'],
+            [os.environ.get('PROXY_HOST'), int(os.environ.get('PROXY_PORT'))]
+        )
+    )
+
+else:
+    PROXY_CONFIG = {}
 
 class SQSTestCase(AsyncTestCase):
 
     _region = 'ap-southeast-2'
     _q_name = 'unittest_q'
 
+    _SQSQueue = functools.partial(
+        async_keepalive_httpc.aws.sqs.SQSQueue, use_curl=False)
 
     def setUp(self):
         super(SQSTestCase, self).setUp()
@@ -51,7 +65,7 @@ class SQSTestCase(AsyncTestCase):
         self.Q_URL = self.boto_q.url
 
         if not is_using_meta:
-            self.q = SQSQueue(
+            self.q = self._SQSQueue(
                 self.io_loop,
                 self.Q_URL,
                 access_key = self.ACCESS_KEY,
@@ -65,7 +79,7 @@ class SQSTestCase(AsyncTestCase):
                 region = self._region
             )
 
-            self.q = SQSQueue(
+            self.q = self._SQSQueue(
                 self.io_loop,
                 self.Q_URL,
                 signer = signer,
@@ -87,7 +101,9 @@ class SQSTestCase(AsyncTestCase):
         self.assertEqual(r3.code, 200)
 
         # make sure it is 'keep-alive'
-        self.assertEqual(self.q.client.connection.connect_times, 1)
+        if not self.q.use_curl:
+            self.assertEqual(
+                self.q.client.connection.connect_times, 1)
 
     @gen_test(timeout=100)
     def test_send_batch(self):
@@ -95,7 +111,8 @@ class SQSTestCase(AsyncTestCase):
         self.assertEqual(r1.code, 200)
 
         # make sure it is 'keep-alive'
-        self.assertEqual(self.q.client.connection.connect_times, 1)
+        if not self.q.use_curl:
+            self.assertEqual(self.q.client.connection.connect_times, 1)
 
     @unittest.skipIf(botocore.credentials.search_iam_role(),
         "this testcase will skip in AWS enviornment")
@@ -107,9 +124,17 @@ class SQSTestCase(AsyncTestCase):
             'sqs'
         )
 
-        q = SQSQueue(self.io_loop, self.Q_URL, signer=signer)
+        q = self._SQSQueue(self.io_loop, self.Q_URL, signer=signer)
 
         r1 = yield q.send_batch(messages=['1abc', '2def', '3ghi'])
         self.assertEqual(r1.code, 200)
 
-        self.assertEqual(q.client.connection.connect_times, 1)
+        if not self.q.use_curl:
+            self.assertEqual(q.client.connection.connect_times, 1)
+
+@unittest.skipIf(not PROXY_CONFIG, "HTTP_PROXY enviornment variable is not set.")
+class SQSTestCaseCurl(SQSTestCase):
+    _SQSQueue = functools.partial(
+        async_keepalive_httpc.aws.sqs.SQSQueue, proxy_config=PROXY_CONFIG)
+
+

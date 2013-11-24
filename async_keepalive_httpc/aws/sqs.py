@@ -107,7 +107,10 @@ class SQSQueue(AWSClient):
             cb = functools.partial(verify_send, expact_md5=md5_unquoted, callback=callback)
         else:
             cb = callback
-        return self.client.fetch(x_url, callback=cb, method='POST', headers=x_headers, body=x_body)
+
+        r = tornado.httpclient.HTTPRequest(x_url, method='POST', headers=x_headers, body=x_body)
+
+        return self.fire(r, callback=cb)
 
     def send_batch(self, messages=[], callback=None, headers={}):
 
@@ -150,8 +153,5 @@ class SQSQueue(AWSClient):
 
         self.logger.debug('send_batch authinfo is {}'.format(x_headers['Authorization']))
 
-        return self.client.fetch(r, callback=cb, method='POST')
+        return self.fire(r, callback=cb)
 
-
-    def get(self, message_number=1):
-        pass
