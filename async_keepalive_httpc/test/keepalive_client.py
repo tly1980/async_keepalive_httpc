@@ -99,3 +99,20 @@ class SimpleKeepAliveHTTPClientTestCase(AsyncTestCase):
         
         self.assertEqual(ska_client.connection.stream.closed(), True)
 
+    @gen_test(timeout=10)
+    def test_proxy(self):
+        self.create_server()
+        ska_client = SimpleKeepAliveHTTPClient(self.io_loop, idle_timeout=0.1)
+
+        c = yield ska_client.fetch('http://localhost:{}/c.txt'.format(self.port),
+            proxy_host='localhost', proxy_port=8888)
+
+        self.assertIn('c.txt', c.body)
+
+        # g = yield ska_client.fetch('http://www.google.com/'.format(self.port),
+        #     proxy_host='localhost', proxy_port=8888)
+
+        #self.assertIn('c.txt', c.body)
+
+        self.assertEqual(ska_client.connection.stream.closed(), True)
+

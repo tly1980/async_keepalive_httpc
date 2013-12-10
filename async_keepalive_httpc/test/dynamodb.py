@@ -131,10 +131,10 @@ class DynamoDBTestCase(AsyncTestCase):
 
             self.assertEqual(d, json.loads(resp.aws_result['Item']['DATA']['S']))
 
-@unittest.skipIf(not PROXY_CONFIG, "HTTP_PROXY enviornment variable is not set.")
+#@unittest.skipIf(not PROXY_CONFIG, "HTTP_PROXY enviornment variable is not set.")
 class CurlDynamoDBTestCase(DynamoDBTestCase):
     _DynamoDB = functools.partial(
         async_keepalive_httpc.aws.dynamodb.DynamoDB, 
-        proxy_config=PROXY_CONFIG
+        proxy_config={'proxy_host':'localhost', 'proxy_port':8888}
     )
 
