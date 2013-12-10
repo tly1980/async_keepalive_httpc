@@ -1,8 +1,8 @@
 import logging
+import datetime
 
 import botocore.credentials
 from botocore.auth import SigV4Auth
-import datetime
 import dateutil.parser
 from dateutil.tz import tzutc
 
@@ -15,8 +15,7 @@ class DummyRequest(object):
     Important: it would create a new dict to copy the headers, so that it would not messed with the original dict.
     '''
 
-    def __init__(
-        self, method, url, headers={}, params={}, body=None):
+    def __init__(self, method, url, headers={}, params={}, body=None):
         self.url = url
         self.headers = headers
         self.method = method
@@ -32,10 +31,7 @@ class DummyRequest(object):
 
 class EasyV4Sign(object):
 
-    def __init__(self, 
-            access_key, secret_key,
-            service,
-            region='ap-southeast-2'):
+    def __init__(self, access_key, secret_key, service, region='ap-southeast-2'):
 
         self.region = region
         self.access_key = access_key
@@ -45,7 +41,6 @@ class EasyV4Sign(object):
         self.service = service
         self.sigV4auth = SigV4Auth(
             self.credentials, self.service, self.region)
-
 
     def sign_post(self, url, headers, data={}, timestamp=None):
         new_headers = dict(headers)
@@ -101,17 +96,14 @@ class EasyV4Sign(object):
 
 
 class IamRoleV4Sign(EasyV4Sign):
-    def __init__(self, io_loop, 
-        service, 
-        region='ap-southeast-2',
-        role = None,
-        before=datetime.timedelta(minutes=5)):
+    def __init__(self, io_loop, service, region='ap-southeast-2', role=None, before=datetime.timedelta(minutes=5), fail_retry=datetime.timedelta(seconds=0.5)):
         self.io_loop = io_loop
         self.service = service
         self.region = region
         self.before = before
         self.role = role
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.fail_retry = fail_retry
         self.start()
 
     def start(self):
@@ -122,15 +114,19 @@ class IamRoleV4Sign(EasyV4Sign):
 
         self.logger.info('finish getting new credentials')
 
-        if self.role:
-            role_metadata = botocore.credentials._search_md()[self.role]
-        else:
-            role_metadata = botocore.credentials._search_md().values()[0]
+        try:
+            if self.role:
+                role_metadata = botocore.credentials._search_md()[self.role]
+            else:
+                role_metadata = botocore.credentials._search_md().values()[0]
 
-        utc_expiration = dateutil.parser.parse(role_metadata['Expiration'])
-        
-        t_delta = utc_expiration - datetime.datetime.now(tzutc()) - self.before
-        self.logger.info('next time to get credentials would be {} seconds later'.format(
-            t_delta.total_seconds()))
-        self._timeout = self.io_loop.add_timeout(t_delta, self.start)
+            utc_expiration = dateutil.parser.parse(role_metadata['Expiration'])
 
+            t_delta = utc_expiration - datetime.datetime.now(tzutc()) - self.before
+            self.logger.info('next time to get credentials would be {} seconds later'.format(
+                t_delta.total_seconds()))
+            self._timeout = self.io_loop.add_timeout(t_delta, self.start)
+
+        except Exception:
+            self.logger.exception('Exception found, would retry in {} seconds'.format(self.fail_retry.total_seconds()))
+            self._timeout = self.io_loop.add_timeout(self.fail_retry, self.start)
