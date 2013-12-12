@@ -1,4 +1,4 @@
-.PHONY: build test clean nopyc bump register
+.PHONY: build test clean nopyc bump register upload
 
 test:
 	nosetests
@@ -23,6 +23,10 @@ nopyc:
 
 dist:
 	./setup.py sdist
+
+upload:
+	python setup.py sdist upload
+
 
 bump:
 	cd async_keepalive_httpc && bumpversion
