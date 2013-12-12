@@ -107,14 +107,14 @@ class IamRoleV4Sign(EasyV4Sign):
         self.start()
 
     def start(self):
-        self.logger.info('about to get new credentials')
-        self.credentials = botocore.credentials.search_iam_role()
-        self.sigV4auth = SigV4Auth(
-            self.credentials, self.service, self.region)
-
-        self.logger.info('finish getting new credentials')
-
         try:
+            self.logger.info('about to get new credentials')
+            self.credentials = botocore.credentials.search_iam_role()
+            self.sigV4auth = SigV4Auth(
+                self.credentials, self.service, self.region)
+
+            self.logger.info('finish getting new credentials')
+
             if self.role:
                 role_metadata = botocore.credentials._search_md()[self.role]
             else:
@@ -127,6 +127,6 @@ class IamRoleV4Sign(EasyV4Sign):
                 t_delta.total_seconds()))
             self._timeout = self.io_loop.add_timeout(t_delta, self.start)
 
-        except Exception:
+        except:
             self.logger.exception('Exception found, would retry in {} seconds'.format(self.fail_retry.total_seconds()))
             self._timeout = self.io_loop.add_timeout(self.fail_retry, self.start)
