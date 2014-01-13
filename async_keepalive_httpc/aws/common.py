@@ -12,16 +12,18 @@ class AWSClient(object):
         self.region = region
         self.proxy_config = proxy_config
 
+        service = self._service.lower()
+
         if not signer :
             assert None not in (access_key, secret_key, region)
             self.v4sign = EasyV4Sign(
                 self.access_key, self.secret_key,
-                self._service.lower(),
+                service,
                 region=self.region
             )
         else:
             self.v4sign = signer
-            signer.service = self._service
+            signer.service = service
 
         if self.proxy_config or use_curl:
             self.client = CurlAsyncHTTPClient(self.io_loop)
