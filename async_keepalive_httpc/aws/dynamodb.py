@@ -226,7 +226,7 @@ class DynamoAPI(object):
 
 
 class DynamoDB(DynamoAPI, AWSClient):
-    _service = 'DynamoDB'
+    _service = 'dynamodb'
     _version = "20120810"
 
     def __init__(self,  io_loop, is_ssl=False, **kwargs):
