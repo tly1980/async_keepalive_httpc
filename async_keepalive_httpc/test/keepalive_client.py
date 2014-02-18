@@ -1,4 +1,6 @@
 import datetime
+import unittest
+import os
 
 import tornado.httpserver
 from tornado.testing import AsyncTestCase, gen_test
@@ -6,6 +8,18 @@ from tornado.testing import AsyncTestCase, gen_test
 from tornado import gen
 from async_keepalive_httpc.keepalive_client import SimpleKeepAliveHTTPClient
 
+
+if os.environ.get('PROXY_HOST'):
+
+    PROXY_CONFIG = dict(
+        zip(
+            ['proxy_host', 'proxy_port'],
+            [os.environ.get('PROXY_HOST'), int(os.environ.get('PROXY_PORT'))]
+        )
+    )
+
+else:
+    PROXY_CONFIG = {}
 
 class SimpleKeepAliveHTTPClientTestCase(AsyncTestCase):
     '''
@@ -99,6 +113,7 @@ class SimpleKeepAliveHTTPClientTestCase(AsyncTestCase):
         
         self.assertEqual(ska_client.connection.stream.closed(), True)
 
+    @unittest.skipIf(not PROXY_CONFIG, "HTTP_PROXY enviornment variable is not set.")
     @gen_test(timeout=10)
     def test_proxy(self):
         self.create_server()

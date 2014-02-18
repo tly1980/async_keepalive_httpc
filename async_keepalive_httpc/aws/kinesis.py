@@ -9,6 +9,9 @@ from async_keepalive_httpc.aws.common import AWSClient
 
 
 class KinesisAPI(object):
+    def default_callback(self, data, error=None, response=None):
+        self.logger.debug('data: {}'.format(data))
+
     def put_record(self, stream_name, data, partion_key, 
             explicit_hash_key=None, sequence_number_for_ordering=None, 
             exclusive_minimum_sequence_number=None, b64_encode=True,
@@ -28,9 +31,6 @@ class KinesisAPI(object):
             api_data['Data'] = base64.b64encode(data)
         else:
             api_data['Data'] = data
-
-        if not callback:
-            callback = self.default_callback
 
         return self.make_request('PutRecord', data,
             callback=callback, object_hook=object_hook)
@@ -56,6 +56,9 @@ class KinesisAPI(object):
             self.url, headers, data=data)
 
         r = HTTPRequest(self.url, method=x_method, headers=x_headers, body=x_body)
+
+        if not callback:
+            callback = self.default_callback
 
         callback = functools.partial(self._finish_make_request,
             callback=callback, object_hook=object_hook)
