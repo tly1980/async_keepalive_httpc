@@ -27,7 +27,7 @@ class KinesisTestCase(AsyncTestCase):
     _Kinesis = functools.partial(
         async_keepalive_httpc.aws.kinesis.Kinesis, 
         use_curl=False, 
-        is_ssl=False
+        is_ssl=True
     )
 
     def setUp(self):
@@ -71,4 +71,5 @@ class KinesisTestCase(AsyncTestCase):
     @gen_test(timeout=10000)
     def test_put_record(self):
     	r = yield self.k.put_record(self._stream_name, 'testA', 1)
-    	self.assertIsNotNull(r)
+    	self.assertIsNotNone(r)
+    	self.assertTrue('SequenceNumber' in r.aws_result)
