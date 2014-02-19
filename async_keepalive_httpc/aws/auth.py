@@ -66,7 +66,7 @@ class EasyV4Sign(object):
 
         body = json.dumps(data)
         if 'Content-Type' not in new_headers:
-            new_headers['Content-Type'] = 'application/x-amz-json-1.0'
+            new_headers['Content-Type'] = 'application/x-amz-json-1.1'
 
         r = DummyRequest('POST', url, headers=new_headers, body=body, params={})
 
