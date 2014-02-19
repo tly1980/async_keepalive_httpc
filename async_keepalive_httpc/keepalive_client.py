@@ -241,6 +241,14 @@ class KeepAliveHTTPConnection(object):
         return True
 
     def resolve(self):
+        self.proxy_host = getattr(self.request, 'proxy_host', None)
+        self.proxy_port = getattr(self.request, 'proxy_port', 8080)
+
+        if self.proxy_host:
+            host = self.proxy_host
+            port = self.proxy_port
+            self.is_support_keepalive = False
+
         with stack_context.ExceptionStackContext(self._handle_exception):
             self.parsed = urlparse.urlsplit(_unicode(self.request.url))
             if self.parsed.scheme not in ("http", "https"):
@@ -276,7 +284,10 @@ class KeepAliveHTTPConnection(object):
             self.logger.info('is connecting ....')
             self._on_connect()
         else:
-            self.resolver.resolve(host, port, af, callback=self._on_resolve)
+            if not self.proxy_host:
+                self.resolver.resolve(host, port, af, callback=self._on_resolve)
+            else:
+                self.resolver.resolve(self.proxy_host, self.proxy_port, af, callback=self._on_resolve)
 
     def update_timeout(self):
         # update the start_time here
@@ -367,12 +378,13 @@ class KeepAliveHTTPConnection(object):
                 not self.request.allow_nonstandard_methods):
             raise KeyError("unknown method %s" % self.request.method)
         for key in ('network_interface',
-                    'proxy_host', 'proxy_port',
+                    #'proxy_host', 'proxy_port',
                     'proxy_username', 'proxy_password'):
             if getattr(self.request, key, None):
                 raise NotImplementedError('%s not supported' % key)
         # KA: here is the only changes
         #if "Connection" not in self.request.headers:
+
         self.request.headers["Connection"] = "keep-alive"
         if "Host" not in self.request.headers:
             if '@' in self.parsed.netloc:
@@ -413,8 +425,13 @@ class KeepAliveHTTPConnection(object):
             self.request.headers["Content-Type"] = "application/x-www-form-urlencoded"
         if self.request.use_gzip:
             self.request.headers["Accept-Encoding"] = "gzip"
-        req_path = ((self.parsed.path or '/') +
-                   (('?' + self.parsed.query) if self.parsed.query else ''))
+
+        if self.proxy_host:
+            req_path = self.request.url
+        else:
+            req_path = ((self.parsed.path or '/') +
+                       (('?' + self.parsed.query) if self.parsed.query else ''))
+
         request_lines = [utf8("%s %s HTTP/1.1" % (self.request.method,
                                                   req_path))]
         for k, v in self.request.headers.get_all():

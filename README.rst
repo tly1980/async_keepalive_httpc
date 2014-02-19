@@ -21,7 +21,7 @@ This client is basically a hack of tornado Httpclient and HttpConnection, so the
 which means it can use Tornado HTTPRequest and most feature of the original client 
 (like gzip, proxies, .etc - Warrning: further tests needed to be conducted for this features.).
 
-A _Proxy feature is included since version 0.13. The proxy implementation is using pycurl, so the the Keep-Alive feature would be disabled. 
+A Proxy_ feature is included since version 0.13. The proxy implementation is using pycurl, so the the Keep-Alive feature would be disabled. 
 
 Besides that, the libaray also provide a Queue Function limited support to some of the AWS services: SQS and DyanmoDB.
 And, last but not least, a simple resource pool.

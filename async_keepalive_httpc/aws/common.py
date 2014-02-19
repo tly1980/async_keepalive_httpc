@@ -1,3 +1,5 @@
+import logging
+
 from tornado.curl_httpclient import CurlAsyncHTTPClient
 
 from async_keepalive_httpc.aws.auth import EasyV4Sign
@@ -12,6 +14,7 @@ class AWSClient(object):
         self.region = region
         self.proxy_config = proxy_config
 
+        #logger = logging.getLogger('awsclient')
         service = self._service.lower()
 
         if not signer :
@@ -25,12 +28,15 @@ class AWSClient(object):
             self.v4sign = signer
             signer.service = service
 
-        if self.proxy_config or use_curl:
-            self.client = CurlAsyncHTTPClient(self.io_loop)
-            self.use_curl = True
-        else:
-            self.client = SimpleKeepAliveHTTPClient(self.io_loop)
-            self.use_curl = False
+        # if self.proxy_config or use_curl:
+        #     #print 'using proxy_config %s' % self.proxy_config
+        #     if self.proxy_config:
+        #         logger.debug('using proxy_config %s' % self.proxy_config)
+        #     self.client = CurlAsyncHTTPClient(self.io_loop)
+        #     self.use_curl = True
+        # else:
+        self.client = SimpleKeepAliveHTTPClient(self.io_loop)
+        self.use_curl = False
 
     def __len__(self):
         if not self.use_curl:

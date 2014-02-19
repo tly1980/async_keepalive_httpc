@@ -4,3 +4,4 @@ from pool import *
 from utils import *
 from sqs import *
 from dynamodb import *
+from kinesis import *

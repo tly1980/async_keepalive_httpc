@@ -1,4 +1,6 @@
 import datetime
+import unittest
+import os
 
 import tornado.httpserver
 from tornado.testing import AsyncTestCase, gen_test
@@ -6,6 +8,18 @@ from tornado.testing import AsyncTestCase, gen_test
 from tornado import gen
 from async_keepalive_httpc.keepalive_client import SimpleKeepAliveHTTPClient
 
+
+if os.environ.get('PROXY_HOST'):
+
+    PROXY_CONFIG = dict(
+        zip(
+            ['proxy_host', 'proxy_port'],
+            [os.environ.get('PROXY_HOST'), int(os.environ.get('PROXY_PORT'))]
+        )
+    )
+
+else:
+    PROXY_CONFIG = {}
 
 class SimpleKeepAliveHTTPClientTestCase(AsyncTestCase):
     '''
@@ -97,5 +111,23 @@ class SimpleKeepAliveHTTPClientTestCase(AsyncTestCase):
         yield gen.Task(
             self.io_loop.add_timeout, datetime.timedelta(seconds=0.11))
         
+        self.assertEqual(ska_client.connection.stream.closed(), True)
+
+    @unittest.skipIf(not PROXY_CONFIG, "HTTP_PROXY enviornment variable is not set.")
+    @gen_test(timeout=10)
+    def test_proxy(self):
+        self.create_server()
+        ska_client = SimpleKeepAliveHTTPClient(self.io_loop, idle_timeout=0.1)
+
+        c = yield ska_client.fetch('http://localhost:{}/c.txt'.format(self.port),
+            proxy_host='localhost', proxy_port=8888)
+
+        self.assertIn('c.txt', c.body)
+
+        # g = yield ska_client.fetch('http://www.google.com/'.format(self.port),
+        #     proxy_host='localhost', proxy_port=8888)
+
+        #self.assertIn('c.txt', c.body)
+
         self.assertEqual(ska_client.connection.stream.closed(), True)
 

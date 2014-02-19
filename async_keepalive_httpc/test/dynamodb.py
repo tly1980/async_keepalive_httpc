@@ -48,7 +48,7 @@ class DynamoDBTestCase(AsyncTestCase):
         if os.path.isfile(path):
             with open(path, 'rb') as f:
                 d = yaml.load(f.read())
-                self.Q_URL = d['Q_URL']
+                #self.Q_URL = d['Q_URL']
                 self.ACCESS_KEY = d['ACCESS_KEY']
                 self.SECRET_KEY = d['SECRET_KEY']
 
@@ -135,6 +135,6 @@ class DynamoDBTestCase(AsyncTestCase):
 class CurlDynamoDBTestCase(DynamoDBTestCase):
     _DynamoDB = functools.partial(
         async_keepalive_httpc.aws.dynamodb.DynamoDB, 
-        proxy_config=PROXY_CONFIG
+        proxy_config={'proxy_host':'localhost', 'proxy_port':8888}
     )
 
