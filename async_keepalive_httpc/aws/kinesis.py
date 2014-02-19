@@ -7,6 +7,7 @@ from tornado.httpclient import HTTPRequest
 from async_keepalive_httpc.utils import json
 from async_keepalive_httpc.aws.common import AWSClient
 
+logging.basicConfig(level=logging.DEBUG)
 
 class KinesisAPI(object):
     def default_callback(self, data, error=None, response=None):
@@ -18,7 +19,7 @@ class KinesisAPI(object):
             callback=None, object_hook=None):
         api_data = {
             'StreamName': stream_name,
-            'PartitionKey': partion_key
+            'PartitionKey': str(partion_key)
         }
 
         if exclusive_minimum_sequence_number: 
@@ -32,7 +33,7 @@ class KinesisAPI(object):
         else:
             api_data['Data'] = data
 
-        return self.make_request('PutRecord', data,
+        return self.make_request('PutRecord', api_data,
             callback=callback, object_hook=object_hook)
         
 
@@ -46,10 +47,9 @@ class KinesisAPI(object):
         and cache the request when it is retrieved. 
         '''
 
-
         headers = {
             'X-Amz-Target':  '%s_%s.%s' % (self._service, self._version, action),
-            'Content-Type' : 'application/x-amz-json-1.0'
+            'Content-Type' : 'application/x-amz-json-1.1'
         }
 
         x_method, x_url, x_headers, x_body = self.v4sign.sign_json(
@@ -98,6 +98,7 @@ class Kinesis(KinesisAPI, AWSClient):
         super(Kinesis, self).__init__(io_loop, **kwargs)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.is_ssl = is_ssl
+
         if self.is_ssl:
             self.url = 'https://kinesis.{}.amazonaws.com/'.format(self.region)
         else:
